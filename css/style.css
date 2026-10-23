@@ -1,0 +1,25 @@
+/* One integer-scaled 320x240 arcade screen, centred on a near-black cabinet. */
+:root{
+  --void:#0f0a12; --cab:#2a1f2c; --rim:#7a6470; --bone:#f2e6d0; --puke:#d8dc5a; --blood:#e04a3a;
+  --pix:'Press Start 2P', ui-monospace, 'Courier New', monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{background:var(--void);color:var(--bone);margin:0;display:flex;align-items:center;justify-content:center;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px;
+  box-sizing:border-box;overflow:hidden;font-family:var(--pix)}
+#g{display:block;image-rendering:pixelated;image-rendering:crisp-edges;background:#000;outline:none;
+  box-shadow:0 0 0 3px var(--cab),0 0 0 6px var(--void),0 0 0 8px #3a2c3a,0 24px 70px #000}
+#share{position:fixed;inset:0;background:rgba(10,6,14,.9);display:flex;align-items:center;justify-content:center;z-index:5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
+#share .box{display:flex;flex-direction:column;gap:14px;align-items:center;max-width:960px;width:100%}
+#cardimg{width:100%;max-width:960px;image-rendering:pixelated;border:3px solid var(--rim);background:#000}
+#share .hint,#share .msg{font-size:10px;line-height:1.7;color:var(--bone);margin:0;text-align:center}
+#share .msg{color:var(--puke);min-height:1.7em}
+#share .row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+#share button{font-family:var(--pix);font-size:11px;padding:12px 14px;background:var(--cab);color:var(--bone);
+  border:3px solid var(--rim);cursor:pointer;letter-spacing:.04em}
+#share button:hover{background:#3a2c3a;color:var(--puke)}
+#share button:focus-visible{outline:3px solid var(--puke);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){ #share button{transition:none} }
