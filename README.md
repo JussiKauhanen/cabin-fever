@@ -10,13 +10,13 @@ An 8-bit top-down survival game. A puking zombie with strong opinions chases you
 | --- | --- | --- | --- |
 | 1 | The cabin | 70 s | Zombies |
 | 2 | The clearing | 90 s | Zombies |
-| 3 | The deep forest, somewhere in Finland | 110 s | Arriving through the night: the **mushroom granny** and a zombie, then a zombie, then the **bear**, then the rest of the zombies |
+| 3 | The deep forest, somewhere in Finland | 110 s | A harmless **mushroom granny** picks mushrooms while zombies and the **bear** arrive. Protect her: a zombie bite turns her into a mushroom-throwing zombie. |
 | 4 | Kontula, East Helsinki | 130 s | Arriving through the night: a zombie and the **spurgu**, then two zombies, then the **nisti**, then the rest of the zombies |
 
 The night (12:00 to 6:00 AM) passes fastest on level 1 and a little slower on each level after it. On levels 3 and 4 a new arrival comes every 15–16 seconds; a zombie slot only fills if your zombie count has that many zombies, so the fewer times you have been caught, the emptier the night.
 
 - **Bear:** growls, then charges in a straight line and needs a breather.
-- **Mushroom granny:** a fast nordic walker who stops to pick chanterelles.
+- **Mushroom granny:** starts harmless, wandering and picking chanterelles. Keep zombies away from her. A bite starts a visible transformation countdown; once turned, she chases you and warns before throwing mushrooms that make you slip. Dodged mushrooms land at the marked spot and break into small slippery pieces, which disappear after three seconds. Keep her unbitten until sunrise for a bonus (`grannySafeBonus` in `js/config.js`).
 - **Spurgu:** very slow; wobbles, naps on the spot (harmless while asleep) and spills slippery beer.
 - **Nisti:** really fast, faster than you while dashing, but twitches in place between dashes and drifts off now and then.
 
@@ -24,7 +24,7 @@ The night (12:00 to 6:00 AM) passes fastest on level 1 and a little slower on ea
 
 Every level hides a checkpoint flag behind something tall (a bookshelf, a tree, a birch). Walk behind it to pick the flag up; a faint twinkle gives the spot away. If you then lose every life, the game over screen lets you retry the level of the last flag you found, with fresh lives and the score you had when you started that level, or give up and save your score. A used flag is back in its hiding place for the next try.
 
-Magazines and raps work on everyone. The bear eats the magazine instead of reading it, the granny reads for longer, and the nisti loses interest fast.
+Magazines and raps distract the hostile characters. The bear eats the magazine instead of reading it, the infected granny reads for longer, and the nisti loses interest fast. The healthy picker ignores magazines, so use them to keep zombies busy and away from her; raps give everyone a breather.
 
 ## Play
 
@@ -50,6 +50,8 @@ Portrait puts the controls under the game screen; landscape puts the stick on th
 On desktop, rapping keeps the game screen at its normal size, with the on-screen keyboard overlaid at the bottom and the original rap panel above it. Pausing the game also pauses the music, which continues when you resume. On-screen hints switch between key names and button names depending on what you last used.
 
 Get caught and you turn into a zombie: the level restarts with one more zombie. Five and it's game over.
+
+During play, checkpoint and status notices stay in a compact strip below the HUD. One speech bubble follows its speaker at a time, keeping the same side and size for the whole line. Bubbles and notices become more transparent when characters or hazards pass underneath.
 
 ## Project layout
 

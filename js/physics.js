@@ -16,7 +16,7 @@ function steer(z,tx,ty){
   let gx,gy;if(best){gx=best[0]*16+8;gy=best[1]*16+10;}else{gx=tx;gy=ty;}
   const d=Math.hypot(gx-z.x,gy-z.y)||1;return [(gx-z.x)/d,(gy-z.y)/d];
 }
-function onPuddle(x,y){for(const p of L.puddles)for(const b of p.blobs){const dx=(x-p.x-b[0])/b[2],dy=(y-p.y-b[1])/b[3];if(dx*dx+dy*dy<1)return true;}return false;}
+function onPuddle(x,y){for(const p of L.puddles){if(p.t<=0)continue;for(const b of p.blobs){const dx=(x-p.x-b[0])/b[2],dy=(y-p.y-b[1])/b[3];if(dx*dx+dy*dy<1)return true;}}return false;}
 function floater(x,y,text,col){L.floats.push({x,y,text,col:col||'#f2e6d0',t:1.3});}
 function dirVec(d){return [[0,1],[0,-1],[1,0],[-1,0]][d];}
 function freeSpot(minD){for(let k=0;k<120;k++){const c=1+Math.floor(Math.random()*18),r=1+Math.floor(Math.random()*12);if(L.solid[r][c]||!L.g.ok[r][c])continue;

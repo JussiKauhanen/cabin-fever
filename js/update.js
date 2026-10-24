@@ -5,7 +5,7 @@ function update(dt){
   const m=S.mode;
   music(m==='title'||m==='entry'||m==='scores'?'title':m==='rap'?'rap':(m==='play'||m==='intro'||m==='pause')?'night':null);
   if(m==='title'){S.pageT+=dt;if(S.pageT>7){S.pageT=0;S.page=(S.page+1)%3;}return;}
-  if(m==='intro'){if(S.t>3.2){S.mode='play';S.t=0;}return;}
+  if(m==='intro'){if(S.t>(L.zs.some(z=>z.k==='granny')?CFG.grannyIntroTime:3.2)){S.mode='play';S.t=0;}return;}
   if(m==='play')updPlay(dt);
   else if(m==='rap')updRap(dt);
   else if(m==='caught')updCaught(dt);
@@ -22,7 +22,10 @@ function updPlay(dt){
   const p=L.p,d=L.d;
   L.time+=dt;if(L.grace>0)L.grace-=dt;else S.score+=10*dt;
   if(!L.open&&L.time>=d.night){L.open=true;for(const [c,r] of L.g.doors)L.solid[r][c]=false;L.fields={};SFX.sun();
-    L.banner={a:'6:00 AM - SUNRISE!',b:d.why[0],c:d.why[1],t:5.5};}
+    const granny=L.zs.find(z=>z.k==='granny'&&z.grannyState==='healthy');
+    if(granny){L.grannySaved=true;L.grannyBonus=CFG.grannySafeBonus;S.score+=L.grannyBonus;
+      granny.say="YOU'RE A DEAR!";granny.sayT=3;floater(granny.x,granny.y-26,'+'+L.grannyBonus+' GRANNY SAVED!','#9dbb6c');}
+    L.banner={a:'6:00 AM - SUNRISE!',b:d.why[0],c:L.grannySaved?'GRANNY SAVED! +'+L.grannyBonus:d.why[1],t:5.5};}
   if(L.pending&&L.pending.length)waveTick(); // new levels: the next wave arrives
   // input
   let ix=(down('arrowright')||down('d')?1:0)-(down('arrowleft')||down('a')?1:0),iy=(down('arrowdown')||down('s')?1:0)-(down('arrowup')||down('w')?1:0);
@@ -48,22 +51,43 @@ function updPlay(dt){
   L.items=L.items.filter(i=>!i.gone&&!(i.type==='lure'&&i.life<=0));
   // projectiles
   for(const pr of L.projs){const nx=pr.x+pr.vx*dt,ny=pr.y+pr.vy*dt;pr.t-=dt;pr.spin+=dt*20;
-    const hitZ=L.zs.find(z=>z.read<=0&&Math.hypot(z.x-nx,z.y-ny)<11);
+    const hitZ=L.zs.find(z=>canReadMag(z)&&z.read<=0&&Math.hypot(z.x-nx,z.y-ny)<11);
     if(hitZ){pr.done=true;startRead(hitZ);S.score+=50;floater(hitZ.x,hitZ.y-26,'+50 BOOKWORMED!','#3ac0d0');SFX.hit();continue;}
     if(boxHits(nx,ny,2,2)||pr.t<=0){pr.done=true;const lure={type:'lure',x:pr.x,y:pr.y,t:0,life:12,k:pr.k};L.items.push(lure);
-      let best=null,bd=1e9;for(const z of L.zs){if(z.read>0)continue;const dd=Math.hypot(z.x-lure.x,z.y-lure.y);if(dd<bd){bd=dd;best=z;}}if(best)best.lure=lure;continue;}
+      let best=null,bd=1e9;for(const z of L.zs){if(z.read>0||!canReadMag(z))continue;const dd=Math.hypot(z.x-lure.x,z.y-lure.y);if(dd<bd){bd=dd;best=z;}}if(best)best.lure=lure;continue;}
     pr.x=nx;pr.y=ny;}
   L.projs=L.projs.filter(p=>!p.done);
   if(L.vibe>0){L.vibe-=dt;if(Math.random()<dt*3){const z=pick(L.zs);L.parts.push({x:z.x+(Math.random()*10-5),y:z.y,z:22,vx:0,vy:0,vz:18,g:0,t:1.2,note:1,col:pick(['#d8dc5a','#f0a0c8','#3ac0d0'])});}}
   // zombies
   for(const z of L.zs)updZombie(z,dt);
+  checkGrannyInfection(); // check touching before separation pushes the actors apart
   for(let i=0;i<L.zs.length;i++)for(let j=i+1;j<L.zs.length;j++){const a=L.zs[i],b=L.zs[j];const dx=b.x-a.x,dy=b.y-a.y,dd=Math.hypot(dx,dy);if(dd<10&&dd>0){const push=(10-dd)/2/dd;moveEnt(a,-dx*push,-dy*push);moveEnt(b,dx*push,dy*push);}}
+  updMushrooms(dt);
   // puddles
   for(const pd of L.puddles)pd.t-=dt;L.puddles=L.puddles.filter(pd=>pd.t>0);
   // caught?
   if(L.grace<=0&&L.vibe<=0)for(const z of L.zs){if(z.read>0||z.calm)continue;if(Math.hypot(z.x-p.x,z.y-p.y)<(z.cr||9)){caught(z);break;}}
 }
-function startRead(z){z.read=CFG.readTime;z.readK=1+Math.floor(Math.random()*2);z.lure=null;z.say=pick(READQ);z.sayT=3.5;S.stats.mags++;if(z.k)foeRead(z);}
+function canReadMag(z){return z.k!=='granny'||z.grannyState==='infected';}
+function startRead(z){if(!canReadMag(z))return;z.read=CFG.readTime;z.readK=1+Math.floor(Math.random()*2);z.lure=null;z.say=pick(READQ);z.sayT=3.5;S.stats.mags++;if(z.k)foeRead(z);}
+function updMushrooms(dt){
+  if(L.grace>0||L.vibe>0)return;
+  for(const m of L.mushrooms){const travel=Math.max(0,Math.min(dt,m.t));m.t-=travel;m.age+=travel;let hitPlayer=false;
+    // Small movement steps keep fast mushrooms from crossing a wall or skipping the player.
+    const steps=Math.max(1,Math.ceil(Math.hypot(m.vx,m.vy)*travel/3));
+    for(let i=0;i<steps;i++){const nx=m.x+m.vx*travel/steps,ny=m.y+m.vy*travel/steps;
+      if(boxHits(nx,ny,2,2)){m.done=true;break;}
+      m.x=nx;m.y=ny;
+      if(Math.hypot(m.x-L.p.x,m.y-L.p.y)<8){m.done=true;hitPlayer=true;L.p.slip=Math.max(L.p.slip,CFG.slipTime);
+        floater(L.p.x,L.p.y-20,'SLIP!','#f8c840');SFX.slip();break;}}
+    if(m.t<=0)m.done=true;
+    if(m.done){spawnMushroomBits(m.x,m.y);if(hitPlayer)L.p.wasOn=onPuddle(L.p.x,L.p.y);}}
+  L.mushrooms=L.mushrooms.filter(m=>!m.done);
+}
+function spawnMushroomBits(x,y){if(boxHits(x,y,2,2))return;const chunks=[[0,0]];
+  for(let i=0;i<6;i++){const dx=Math.round((Math.random()-.5)*10),dy=Math.round((Math.random()-.5)*6);
+    if(!solidAt(x+dx,y+dy))chunks.push([dx,dy]);}
+  L.puddles.push({x,y,mushroom:true,t:CFG.mushroomBitsLife,blobs:[[0,0,6,4]],chunks});}
 function updZombie(z,dt){
   if(z.k){updFoe(z,dt);return;} // new levels: guests move their own way (enemies.js)
   z.bubbleT-=dt;if(z.sayT>0)z.sayT-=dt;
@@ -86,7 +110,7 @@ function spawnPuddle(x,y,beer){const blobs=[[0,0,9,5]];const n=3+Math.floor(Math
   L.puddles.push({x,y,beer:!!beer,t:CFG.puddleLife,blobs,chunks:[...Array(4)].map(()=>[(Math.random()-.5)*12,(Math.random()-.5)*5])});}
 function throwMag(){const p=L.p;if(p.mags<=0){floater(p.x,p.y-22,'NO MAGS!','#e04a3a');SFX.miss();return;}
   p.mags--;const [vx,vy]=dirVec(p.dir);L.projs.push({x:p.x+vx*6,y:p.y+vy*4,vx:vx*175,vy:vy*175,t:.55,spin:0,k:1+Math.floor(Math.random()*2)});SFX.throw();}
-function gotCheckpoint(it){S.cp=S.level;S.cpScore=S.lvScore;S.score+=100;floater(it.x,it.y-22,'+100 CHECKPOINT!','#f8c840');
+function gotCheckpoint(it){S.cp=S.level;S.cpScore=S.lvScore;S.score+=100;floater(it.x,it.y-22,'+100','#f8c840');
   L.banner={a:'CHECKPOINT!',b:'GAME OVER? YOU CAN RETRY LEVEL '+(S.level+1)+'.',c:'',t:3};SFX.flag();}
 function caught(z){S.mode='caught';S.t=0;S.stats.caught++;z.say=z.k?FOEQ[z.k].caught:'WELCOME TO THE CLUB.';z.sayT=3;L.catcher=z.k||null;SFX.caught();L.banner=null;}
 function updCaught(dt){

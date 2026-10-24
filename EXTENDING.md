@@ -18,12 +18,12 @@ The files in `js/` are classic scripts that share globals. That is on purpose: i
 | `audio.js` | `SFX.*` sound effects and the music sequencer (`playStep`) |
 | `scores.js` | High score table in `localStorage` |
 | `level-cabin.js`, `level-clearing.js`, `level-forest.js`, `level-kontula.js` | One file per level: collision map, painting, animated parts |
-| `enemies.js` | Level guests that chase you besides the zombies (bear, mushroom granny, spurgu, nisti): kinds in `FOES`, their moves and sprites |
+| `enemies.js` | Level guests (bear, mushroom granny, spurgu, nisti): kinds in `FOES`, moves, sprites, granny infection and throwing |
 | `levels.js` | `buildGeo()` builds all levels at boot; `LEVELS` lists their settings |
 | `state.js` | `S` (whole game) and `L` (current level) state, `setupLevel()` |
 | `physics.js` | Tile collision, line of sight, BFS flow field for zombie pathfinding |
-| `update.js` | Per-frame logic: player, zombies, puke, items, magazines, rap, getting caught |
-| `render-world.js` | Play screen: layers, entities, lighting, HUD, rap panel |
+| `update.js` | Per-frame logic: player, zombies, puke, items, magazines, mushrooms, rescue bonus, rap, getting caught |
+| `render-world.js` | Play screen: layers, entities, mushroom projectiles, picker status, lighting, HUD, rap panel |
 | `render-screens.js` | Title, intro, initials entry, Hall of Fame, end screens; `draw()` |
 | `share.js` | Share card image + copy buttons |
 | `input.js` | Keyboard handling and screen flow (`S.mode`) |
@@ -63,6 +63,8 @@ Guests live in `L.zs` next to the zombies with `k` set to their kind, so magazin
 
 Tile positions in `start` and `zs` are in tiles, for example `[9.5, 11.6]`. The second number is the feet position, so keep it at about `.6` inside a free tile.
 
+**The mushroom picker.** Granny uses `grannyState` (`healthy`, `turning`, `infected`) and `turnT` for her bite countdown. Healthy and turning states keep `calm=true`; only the infected state chases and throws. `checkGrannyInfection()` checks contact with ordinary zombies, and `infectGranny(z)` begins the transformation. Healthy granny ignores magazines and lures. Thrown mushrooms live in `L.mushrooms`, separate from magazine projectiles, and make the player slip rather than directly catching them. During `throwT`, `aimX` and `aimY` hold the marked target so the player can dodge. Flight ends at that target or on impact; `spawnMushroomBits()` leaves a small slippery patch in `L.puddles` with `mushroom:true`. Tune `grannyTurnTime`, `mushroomEvery`, `mushroomSpeed`, `mushroomLife` and `mushroomBitsLife` in `js/config.js`. `grannyIntroTime` gives the forest instructions extra reading time; Enter or the touch button can still skip ahead. Keeping her healthy until sunrise awards `grannySafeBonus` once; `L.grannySaved` and `L.grannyBonus` record that result separately from the escape bonus. `FOEQ.granny` has `healthy`, `infected`, `turning` and `throw` quote lists for each stage.
+
 ## Art conventions
 
 - 16 px tiles, 1 px dark outline on everything, palettes kept to a few hand-picked colours per object (see the palette objects at the top of each level file).
@@ -70,6 +72,10 @@ Tile positions in `start` and `zs` are in tiles, for example `[9.5, 11.6]`. The 
 - Characters are `drawHuman(ctx, x, y, dir, frame, palette, opts)`, where `(x, y)` is the feet. A new character type is mostly a new palette.
 
 ## Debugging
+
+**Live overlays.** `actionRects()` identifies characters, projectiles, aiming markers and nearby hazards. `speechState` retains one speaker and fixes the bubble side and full box size for that utterance; `speechLayout()` follows the speaker with screen-edge clamping. Long dialogue cycles through two-line pages without resizing. `noticeLayout()` keeps status notices below the HUD. Both layouts use world coordinates, and `overlayOpacity()` smoothly fades their backgrounds from 86% to 22% opacity when action overlaps, while keeping text slightly stronger. Rendering restores canvas opacity after each message.
+
+Run the picker gameplay checks with `node --test tests/mushroom-picker.test.cjs`. They exercise harmless contact, infection, mushroom dodging and slipping, distractions, and the once-only sunrise bonus using the real game logic.
 
 Everything is global, so you can poke the game from the browser console during play:
 

@@ -1,17 +1,17 @@
 "use strict";
-/* Guests who chase you besides the zombies: the bear and the mushroom granny (forest), the spurgu and the nisti (Kontula).
-   They live in L.zs next to the zombies (z.k = kind) and play by the same rules: magazines stop them, raps make them vibe,
-   touching one gets you caught. Each kind adds one move of its own:
-   bear = growls, then charges in a straight line and needs a breather; granny = fast nordic walker who stops to pick mushrooms;
+/* Guests share L.zs with zombies (z.k = kind). The mushroom picker is harmless until a zombie bites her;
+   infected guests chase you, read magazines and vibe to raps. Each kind adds one move of its own:
+   bear = growls, then charges in a straight line and needs a breather; granny = gathers mushrooms, then throws them if infected;
    spurgu = wobbles, naps (harmless while asleep) and spills slippery beer; nisti = dashes and twitches, drifts off now and then. */
 const PG={o:'#24161e',skin:'#f0caa8',skinDk:'#d4a68a',hair:'#c8382e',hairLt:'#f0e2d0',shirt:'#7a5a9a',shirtDk:'#5a3e76',pants:'#3a2c3a',shoe:'#2e5a34',eye:'#24161e',cheek:'#ec9a8e'};
+const PGZ={...PG,skin:'#9dbb6c',skinDk:'#6f8f4c',eye:'#ff4a3a',cheek:'#6f8f4c',z:1};
 const PS={o:'#24161e',skin:'#e8a88a',skinDk:'#c8846c',hair:'#3a6a8a',hairLt:'#5a8aaa',shirt:'#6a6a42',shirtDk:'#4a4a2c',pants:'#3a3a4c',shoe:'#24161e',eye:'#24161e',cheek:'#e06060'};
 const PN={o:'#24161e',skin:'#dcc8bc',skinDk:'#b8a49a',hair:'#4c4c60',hairLt:'#5e5e74',shirt:'#4c4c60',shirtDk:'#38384a',pants:'#2a3a6c',shoe:'#e8e8f0',eye:'#24161e',cheek:'#a094b0'};
 const PB={o:'#1a100c',fur:'#6a4426',furDk:'#4a2c18',furLt:'#8a5e36',snout:'#c09060',nose:'#120a08'};
 const FOES={
   bear:{name:'BEAR',spd:30,read:.6,cr:11,bh:28,act:actBear,move:(z,sx,sy)=>z.st==='charge'?[z.cx,z.cy,3.1]:[sx,sy,1],draw:drawBear,
     voice:()=>tn(70+Math.random()*20,.35,'sawtooth',.05,45)},
-  granny:{name:'MUSHROOM GRANNY',spd:40,read:1.5,act:actGranny,draw:(c,z,hb)=>drawGuest(c,z,hb,PG,accGranny),
+  granny:{name:'MUSHROOM GRANNY',spd:40,read:1.5,act:actGranny,draw:drawGranny,
     voice:()=>{tn(620,.07,'square',.02,700);tn(560,.07,'square',.02,null,anow()+.08);}},
   spurgu:{name:'SPURGU',spd:18,read:1.2,act:actSpurgu,move:moveSpurgu,draw:(c,z,hb)=>drawGuest(c,z,hb,PS,accSpurgu),
     voice:()=>tn(150+Math.random()*30,.3,'sawtooth',.03,100)},
@@ -19,10 +19,22 @@ const FOES={
     voice:()=>{for(let i=0;i<3;i++)tn(300+Math.random()*200,.04,'square',.02,null,anow()+i*.05);}}
 };
 function newFoe(k,x,y){const K=FOES[k];
-  return {k,x,y,dir:0,anim:0,spd:K.spd,read:0,readK:1,bubbleT:2+Math.random()*3,say:'',sayT:0,lure:null,still:0,t:Math.random()*9,cr:K.cr||9,bh:K.bh||22,
-    st:'prowl',stT:0,cd:3,cx:0,cy:0,hit:0,busy:0,calm:false,pickT:5+Math.random()*4,napT:9+Math.random()*5,spillT:5+Math.random()*4,dashT:.8,wanderT:8+Math.random()*4,wander:null,wanderLeft:0};}
+  const z={k,x,y,dir:0,anim:0,spd:K.spd,read:0,readK:1,bubbleT:2+Math.random()*3,say:'',sayT:0,lure:null,still:0,t:Math.random()*9,cr:K.cr||9,bh:K.bh||22,
+    st:'prowl',stT:0,cd:3,cx:0,cy:0,hit:0,busy:0,calm:false,pickT:5+Math.random()*4,napT:9+Math.random()*5,spillT:5+Math.random()*4,dashT:.8,wanderT:8+Math.random()*4,wander:null,wanderLeft:0};
+  if(k==='granny'){z.grannyState='healthy';z.turnT=0;z.mushroomT=CFG.mushroomEvery;z.throwT=0;z.calm=true;z.wanderT=0;}
+  return z;}
 /* a magazine reaches a guest (startRead in update.js calls this) */
-function foeRead(z){z.read=CFG.readTime*FOES[z.k].read;z.say=pick(FOEQ[z.k].read);z.busy=0;z.calm=false;z.st='prowl';z.wander=null;}
+function foeRead(z){if(z.k==='granny'&&z.grannyState!=='infected'){z.read=0;z.lure=null;z.calm=true;return;}
+  z.read=CFG.readTime*FOES[z.k].read;z.say=pick(FOEQ[z.k].read);z.busy=0;z.calm=false;z.st='prowl';z.wander=null;
+  if(z.k==='granny'){z.throwT=0;z.mushroomT=Math.max(z.mushroomT,1);}}
+
+/* A bite is checked before entity separation; a reading or dancing zombie cannot infect her. */
+function infectGranny(z){if(z.k!=='granny'||z.grannyState!=='healthy')return;
+  z.grannyState='turning';z.turnT=CFG.grannyTurnTime;z.calm=true;z.read=0;z.busy=0;z.lure=null;z.wander=null;z.throwT=0;
+  z.say=pick(FOEQ.granny.turning||['OH DEAR... THAT WAS A BITE.']);z.sayT=z.turnT+.3;z.bubbleT=z.turnT+4;
+  floater(z.x,z.y-27,'GRANNY WAS BITTEN!','#e04a3a');SFX.grumble();}
+function checkGrannyInfection(){if(L.open||L.grace>0||L.vibe>0)return;
+  for(const z of L.zs)if(z.k==='granny'&&z.grannyState==='healthy'&&L.zs.some(other=>!other.k&&other.read<=0&&Math.hypot(other.x-z.x,other.y-z.y)<=11&&los(other.x,other.y,z.x,z.y)))infectGranny(z);}
 
 /* ---- waves: on levels with d.waves, everyone arrives in order, one slot every d.waveEvery seconds ---- */
 function planWaves(d){const out=[];let zi=0;
@@ -41,15 +53,21 @@ function arrive(w){let x=w.x,y=w.y;
 /* ---- per frame (updZombie hands guests over to this) ---- */
 function updFoe(z,dt){const K=FOES[z.k],Q=FOEQ[z.k];
   z.t+=dt;z.bubbleT-=dt;if(z.sayT>0)z.sayT-=dt;
-  if(z.bubbleT<=0){z.bubbleT=6+Math.random()*7;if(z.read<=0&&L.vibe<=0&&!(z.busy>0)){z.say=pick(Q.say);z.sayT=3.4;K.voice();}}
+  const innocent=z.k==='granny'&&z.grannyState!=='infected';
+  if(z.bubbleT<=0){z.bubbleT=6+Math.random()*7;if(z.read<=0&&L.vibe<=0&&!(z.busy>0)&&z.grannyState!=='turning'){
+    const lines=z.k==='granny'?(z.grannyState==='healthy'?Q.healthy:Q.infected):Q.say;z.say=pick(lines||Q.say);z.sayT=3.4;K.voice();}}
   if(L.grace>0||L.vibe>0)return;
+  // Innocent and transforming pickers never read or chase lures, and a magazine cannot undo a bite.
+  if(innocent){z.calm=true;z.read=0;z.lure=null;if(K.act(z,dt))return;}
+  else{
   if(z.read>0){z.read-=dt;z.dir=0;return;}
   for(const it of L.items){if(it.type==='lure'&&Math.hypot(it.x-z.x,it.y-z.y)<10){it.life=0;it.gone=true;startRead(z);z.readK=it.k||1;return;}}
   if(z.lure&&!L.items.includes(z.lure))z.lure=null;
-  if(K.act(z,dt))return;
+  if(K.act(z,dt))return;}
   let tx=L.p.x,ty=L.p.y;if(z.lure){tx=z.lure.x;ty=z.lure.y;}else if(z.wander){tx=z.wander.x;ty=z.wander.y;}
+  if(innocent&&!z.wander)return;
   const [sx,sy]=steer(z,tx,ty),[mx,my,f]=K.move?K.move(z,sx,sy):[sx,sy,1];
-  const spd=z.spd*f*(K.noDawn?1:1+CFG.zombieSpeedupAtDawn*Math.min(1,L.time/L.d.night)),mv=moveEnt(z,mx*spd*dt,my*spd*dt);z.anim+=mv*.1;
+  const spd=z.spd*f*(innocent?.5:K.noDawn?1:1+CFG.zombieSpeedupAtDawn*Math.min(1,L.time/L.d.night)),mv=moveEnt(z,mx*spd*dt,my*spd*dt);z.anim+=mv*.1;
   if(z.st==='charge'&&mv<spd*dt*.3)z.hit+=dt;
   if(Math.abs(mx)>Math.abs(my))z.dir=mx>0?2:3;else z.dir=my>0?0:1;
   if(mv<.05){z.still+=dt;if(z.still>.6){moveEnt(z,(Math.random()-.5)*6,(Math.random()-.5)*6);z.still=0;}}else z.still=0;}
@@ -61,8 +79,24 @@ function actBear(z,dt){z.cd-=dt;
   if(z.cd<=0&&!z.lure&&Math.hypot(L.p.x-z.x,L.p.y-z.y)<130&&los(z.x,z.y,L.p.x,L.p.y)){z.st='windup';z.stT=.65;z.say='GRRR!';z.sayT=.9;SFX.growl();return true;}
   return false;}
 function actGranny(z,dt){
-  if(z.busy>0){z.busy-=dt;z.dir=0;return true;}
-  z.pickT-=dt;if(z.pickT<=0&&!z.lure){z.pickT=7+Math.random()*5;z.busy=1.5;z.say=pick(FOEQ.granny.pick);z.sayT=1.5;return true;}
+  if(z.grannyState==='turning'){z.turnT=Math.max(0,z.turnT-dt);z.dir=0;
+    if(z.turnT<=0){z.grannyState='infected';z.calm=false;z.mushroomT=Math.min(1.5,CFG.mushroomEvery);
+      z.say=pick(FOEQ.granny.infected||FOEQ.granny.say);z.sayT=3;floater(z.x,z.y-27,'GRANNY TURNED!','#e04a3a');SFX.grumble();}
+    return true;}
+  if(z.grannyState==='healthy'){
+    if(z.busy>0){z.busy-=dt;z.dir=0;return true;}
+    z.pickT-=dt;if(z.pickT<=0){z.pickT=5+Math.random()*4;z.busy=1.5;z.say=pick(FOEQ.granny.pick);z.sayT=1.5;return true;}
+    z.wanderLeft-=dt;if(!z.wander||z.wanderLeft<=0||Math.hypot(z.wander.x-z.x,z.wander.y-z.y)<7){z.wander=freeSpot(0);z.wanderLeft=5+Math.random()*4;}
+    return !z.wander;}
+  if(z.throwT>0){z.throwT=Math.max(0,z.throwT-dt);
+    if(z.throwT<=0){const dx=z.aimX-z.x,dy=z.aimY-z.y,d=Math.hypot(dx,dy);
+      if(d>0&&los(z.x,z.y,z.aimX,z.aimY)){L.mushrooms.push({x:z.x,y:z.y,vx:dx/d*CFG.mushroomSpeed,vy:dy/d*CFG.mushroomSpeed,t:Math.min(CFG.mushroomLife,d/CFG.mushroomSpeed),age:0});SFX.throw();}
+      z.mushroomT=CFG.mushroomEvery+Math.random()*.8;}
+    return true;}
+  z.mushroomT-=dt;
+  if(z.mushroomT<=0&&!z.lure){const d=Math.hypot(z.x-L.p.x,z.y-L.p.y);
+    if(d>24&&d<CFG.mushroomSpeed*CFG.mushroomLife&&los(z.x,z.y,L.p.x,L.p.y)){z.throwT=.6;z.aimX=L.p.x;z.aimY=L.p.y;
+      z.say=pick(FOEQ.granny.throw||['CATCH, DEAR!']);z.sayT=.9;return true;}}
   return false;}
 function actSpurgu(z,dt){
   if(z.busy>0){z.busy-=dt;if(z.busy<=0)z.calm=false;return true;}
@@ -78,6 +112,8 @@ function actNisti(z,dt){
 
 /* ---- drawing ---- */
 const F=(c,x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(x,y,w,h);};
+function drawGranny(c,z,hb){const green=z.grannyState==='infected'||z.grannyState==='turning'&&Math.floor(S.clock*6)%2;
+  drawGuest(c,z,hb,green?PGZ:PG,accGranny);}
 function drawGuest(c,z,hb,P,acc){const busy=z.busy>0,rd=z.read>0;let dx=0,dy=0;
   if(z.k==='spurgu'&&!busy&&!rd&&!hb)dx=Math.round(Math.sin(z.t*2.6)*1.4);
   if(z.k==='nisti'&&z.dashT<0&&!hb)dx=Math.floor(S.clock*30)%2?1:-1;
@@ -93,7 +129,8 @@ function accGranny(c,ox,oy,dir,hb,z){const side=dir>=2;
   const bx=dir===0?ox+9:dir===1?ox-2:dir===3?ox-3:ox+9,by=oy+9;                                         // basket of chanterelles
   F(c,bx,by-2,5,1,PG.o);F(c,bx,by-2,1,3,PG.o);F(c,bx+4,by-2,1,3,PG.o);
   F(c,bx-1,by,7,5,PG.o);F(c,bx,by+1,5,3,'#a8783a');F(c,bx,by+2,5,1,'#7a5428');F(c,bx+1,by,1,1,'#f2b030');F(c,bx+3,by,1,1,'#f2b030');
-  if(z.busy>0)F(c,ox+1,oy+14,2,2,'#f2b030');}
+  if(z.busy>0)F(c,ox+1,oy+14,2,2,'#f2b030');
+  if(z.throwT>0){F(c,ox-2,oy+4,2,4,'#f2e6d0');F(c,ox-4,oy+2,6,3,PG.o);F(c,ox-3,oy+2,4,2,'#f2b030');}}
 function accSpurgu(c,ox,oy,dir,hb){const fl=dir===3;
   F(c,ox+5,oy-1+hb,2,1,'#e8e4dc');                                                                       // beanie pompom
   if(dir===0){F(c,ox+3,oy+7+hb,6,1,'#8a786c');F(c,ox+4,oy+7+hb,1,1,'#6a5a50');F(c,ox+7,oy+7+hb,1,1,'#6a5a50');F(c,ox+5,oy+6+hb,2,1,'#d04848');}

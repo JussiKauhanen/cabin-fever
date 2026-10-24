@@ -1,6 +1,7 @@
 "use strict";
 /* Draws the play screen: world layers, entities, lighting, HUD, banners and the rap panel. */
 const [lc,lx]=mk(320,224);
+let speechState=null,noticeState=null;
 function dawnAmt(){return ss(.72,1,L.time/L.d.night);}
 function drawWorld(shake){
   const g=L.g,dawn=dawnAmt();
@@ -8,7 +9,11 @@ function drawWorld(shake){
   ctx.drawImage(g.bgN,0,0);if(g.bgD&&dawn>0){ctx.globalAlpha=dawn;ctx.drawImage(g.bgD,0,0);ctx.globalAlpha=1;}
   g.dyn(dawn,'under');
   // puddles
-  for(const pd of L.puddles){if(pd.t<3&&Math.floor(pd.t*8)%2)continue;const pc=pd.beer?['#5a3a12','#c8902a','#e0b44a','#f4ecd8','#fff6d8']:['#4e5a16','#b4c03a','#cdd44e','#8a6a2a','#f0f4a0'];
+  for(const pd of L.puddles){
+    if(pd.mushroom){ctx.save();ctx.globalAlpha=Math.max(.3,Math.min(1,pd.t/.7));
+      pd.chunks.forEach((c,i)=>{const x=pd.x+c[0],y=pd.y+c[1];R(x-1,y,3,2,'#24161e');
+        R(x,y,2,1,i%2?'#f2e6d0':'#e88830');R(x-1,y-1,2,1,i%2?'#e88830':'#f8c840');});ctx.restore();continue;}
+    if(pd.t<3&&Math.floor(pd.t*8)%2)continue;const pc=pd.beer?['#5a3a12','#c8902a','#e0b44a','#f4ecd8','#fff6d8']:['#4e5a16','#b4c03a','#cdd44e','#8a6a2a','#f0f4a0'];
     for(const b of pd.blobs)ell(pd.x+b[0],pd.y+b[1],b[2]+1,b[3]+1,pc[0]);
     for(const b of pd.blobs)ell(pd.x+b[0],pd.y+b[1],b[2],b[3],pc[1]);
     for(const b of pd.blobs)ell(pd.x+b[0]-1,pd.y+b[1]-1,Math.max(1,b[2]-3),Math.max(1,b[3]-2),pc[2]);
@@ -22,6 +27,10 @@ function drawWorld(shake){
     else if(it.type==='cp'){ell(x,y,4,1,'rgba(10,6,20,.35)');R(x-1,y-14,3,15,'#24161e');R(x,y-13,1,13,'#c8c0b0');R(x+1,y-14,9,7,'#24161e');R(x+2,y-13,7,5,'#e04a3a');
       for(let i=0;i<7;i+=2)R(x+2+i,y-13+(i%4?2:0),2,2,'#f2e6d0');R(x+2+(Math.floor(it.t*4)%2?6:5),y-13,1,5,'#c03a2e');}
     else{if(it.life<3&&Math.floor(it.life*8)%2)continue;R(x-6,y-5,12,6,'#24161e');R(x-5,y-4,5,4,'#f2e6d0');R(x,y-4,5,4,'#e8dcc8');R(x-4,y-3,2,2,it.k===1?'#e05a8a':'#3ac0d0');R(x+1,y-3,3,1,'#8a7a8a');R(x+1,y-1,2,1,'#8a7a8a');}}
+  // A windup marks the aimed spot, so moving away can dodge the mushroom.
+  for(const z of L.zs)if(z.k==='granny'&&z.grannyState==='infected'&&z.throwT>0){const x=Math.round(z.aimX),y=Math.round(z.aimY),col='#f8c840';
+    R(x-6,y-3,4,1,col);R(x+3,y-3,4,1,col);R(x-6,y+3,4,1,col);R(x+3,y+3,4,1,col);
+    R(x-6,y-2,1,2,col);R(x+6,y-2,1,2,col);R(x-6,y+1,1,2,col);R(x+6,y+1,1,2,col);}
   // entities
   const beat=Math.floor(S.clock*96/60*2)%2;
   const ents=[{p:1,y:L.p.y}].concat(L.zs.map(z=>({z,y:z.y}))).sort((a,b)=>a.y-b.y);
@@ -32,6 +41,9 @@ function drawWorld(shake){
   // projectiles
   for(const pr of L.projs){const x=Math.round(pr.x),y=Math.round(pr.y);ell(x,y,3,1,'rgba(10,6,20,.35)');const sp=Math.floor(pr.spin)%2;
     if(sp){R(x-5,y-12,10,6,'#24161e');R(x-4,y-11,8,4,pr.k===1?'#e05a8a':'#3ac0d0');R(x-3,y-10,3,1,'#fff');}else{R(x-2,y-14,4,9,'#24161e');R(x-1,y-13,2,7,pr.k===1?'#e05a8a':'#3ac0d0');}}
+  for(const m of L.mushrooms){const x=Math.round(m.x),y=Math.round(m.y),arc=8+Math.round(Math.sin(Math.min(1,m.age/CFG.mushroomLife)*Math.PI)*7),my=y-arc;
+    ell(x,y,4,1,'rgba(10,6,20,.45)');R(x-2,my+1,4,6,'#24161e');R(x-1,my+2,2,4,'#f2e6d0');
+    R(x-4,my-1,8,4,'#24161e');R(x-3,my-2,6,4,'#e88830');R(x-2,my-2,4,1,'#f8c840');R(x-2,my,2,1,'#f2e6d0');R(x+1,my-1,1,1,'#f2e6d0');}
   // particles
   for(const p of L.parts){if(p.note){txt('^',p.x,p.y-p.z,p.col,1,'c');}else R(p.x,p.y-p.z,2,2,p.col);}
   // foreground
@@ -48,17 +60,65 @@ function drawWorld(shake){
     ctx.globalCompositeOperation='lighter';const warm=g.warmAt?g.warmAt(fl):g.lights==='l1'?[[264,56,50]]:[[136,190,26],[184,190,26]];
     for(const [x,y,r] of warm){const gr=ctx.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,'rgba(240,138,48,'+(.16*dark/g.dark).toFixed(3)+')');gr.addColorStop(1,'rgba(240,138,48,0)');ctx.fillStyle=gr;ctx.fillRect(x-r,y-r,2*r,2*r);}
     ctx.globalCompositeOperation='source-over';}
-  // speech bubbles
-  for(const z of L.zs)if(z.sayT>0&&z.say)bubble(z.x,z.y-(z.bh||22),z.say);
+  // The picker stays harmless until her bite countdown ends.
+  for(const z of L.zs)if(z.k==='granny'&&z.grannyState!=='infected'){
+    const safe=z.grannyState==='healthy',label=safe?(L.grannySaved?'SAVED':'SAFE'):'TURNING '+Math.max(1,Math.ceil(z.turnT));
+    txtO(label,Math.max(28,Math.min(292,z.x)),Math.min(211,z.y+4),safe?'#9dbb6c':'#f8c840',1,'c','#140a14');}
+  // Speech stays attached to its speaker; overlap fades it instead of moving it around.
+  if(S.mode==='play')drawGameplaySpeech();
   // floaters
   for(const f of L.floats)txt(f.text,Math.max(tw(f.text,1)/2+2,Math.min(318-tw(f.text,1)/2,f.x)),f.y,f.col,1,'c','#140a14');
   ctx.restore();
 }
-function bubble(x,y,s){const lines=wrap(s.toUpperCase(),18);const w=Math.max(...lines.map(l=>tw(l,1)))+8,h=lines.length*9+4;
-  let bx=Math.round(x-w/2);bx=Math.max(2,Math.min(318-w,bx));let by=Math.round(y-h);if(by<2)by=2;
+function rectsOverlap(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
+function actionRects(){
+  const p=L.p,rects=[{x:p.x-15,y:p.y-29,w:30,h:41}];
+  for(const z of L.zs){const bh=z.bh||22;rects.push({x:z.x-12,y:z.y-bh-4,w:24,h:bh+18});
+    if(z.k==='granny'&&z.throwT>0)rects.push({x:z.aimX-10,y:z.aimY-8,w:20,h:16});}
+  for(const m of L.mushrooms)rects.push({x:m.x-8,y:m.y-22,w:16,h:27});
+  for(const m of L.projs)rects.push({x:m.x-8,y:m.y-18,w:16,h:23});
+  for(const pd of L.puddles)if(Math.hypot(pd.x-p.x,pd.y-p.y)<60)for(const b of pd.blobs)
+    rects.push({x:pd.x+b[0]-b[2]-2,y:pd.y+b[1]-b[3]-2,w:b[2]*2+4,h:b[3]*2+4});
+  return rects;}
+/* Positions use world coordinates below the HUD. Each utterance keeps its side and full box size. */
+function speechLayout(x,y,s,footY=y+22,page=0,tail){
+  const all=wrap(s.toUpperCase(),24);if(!all.length)return null;
+  const pages=Math.ceil(all.length/2),lines=all.slice((page%pages)*2,(page%pages)*2+2);
+  const w=Math.max(...all.map(l=>tw(l,1)))+8,h=Math.min(2,all.length)*9+4;
+  tail=tail||(y-h-10>=4?'bottom':'top');
+  return {x:Math.max(4,Math.min(316-w,Math.round(x-w/2))),
+    y:Math.max(4,Math.min(220-h,Math.round(tail==='bottom'?y-h-10:footY+18))),w,h,lines,tail};}
+function noticeLayout(b,page=0){
+  if(!b)return null;const details=[b.b,b.c].filter(Boolean).flatMap(s=>wrap(s.toUpperCase(),48));
+  const a=b.a.toUpperCase(),lines=[a];if(details.length)lines.push(details[page%details.length]);
+  const w=Math.min(308,Math.max(tw(a,1),...details.map(s=>tw(s,1)))+12),h=lines.length>1?24:14,x=Math.round((320-w)/2);
+  return {x,y:2,w,h,lines};}
+function overlayOpacity(state,overlap){const target=overlap ? .22 : .86,dt=Math.max(0,Math.min(.1,S.clock-(state.clock??S.clock)));
+  state.opacity=state.opacity==null?target:state.opacity+(target-state.opacity)*(1-Math.exp(-dt*12));state.clock=S.clock;return state.opacity;}
+function drawGameplaySpeech(){const blocked=actionRects(),notice=noticeLayout(L.banner,Math.floor(S.clock/1.4));
+  if(notice)blocked.push({x:notice.x-2,y:notice.y-2,w:notice.w+4,h:notice.h+4});
+  if(!speechState||speechState.level!==L||!L.zs.includes(speechState.speaker)||speechState.speaker.sayT<=0||!speechState.speaker.say){
+    const urgent=z=>z.throwT>0||z.grannyState==='turning'||z.st==='windup';
+    const speakers=L.zs.filter(z=>z.sayT>0&&z.say)
+      .sort((a,b)=>Number(urgent(b))-Number(urgent(a))||Math.hypot(a.x-L.p.x,a.y-L.p.y)-Math.hypot(b.x-L.p.x,b.y-L.p.y));
+    speechState=speakers.length?{level:L,speaker:speakers[0]}:null;}
+  if(!speechState)return;const z=speechState.speaker;
+  if(speechState.text!==z.say||z.sayT>speechState.remaining+.05){
+    speechState={level:L,speaker:z,text:z.say,startT:z.sayT};}
+  const y=z.y-(z.bh||22),page=Math.floor(Math.max(0,speechState.startT-z.sayT)/1.4),r=speechLayout(z.x,y,z.say,z.y,page,speechState.tail);
+  if(!r)return;speechState.tail=r.tail;speechState.remaining=z.sayT;
+  const outer={x:r.x-4,y:r.y-4,w:r.w+8,h:r.h+8};r.opacity=overlayOpacity(speechState,blocked.some(b=>rectsOverlap(outer,b)));
+  bubble(z.x,y,z.say,r);}
+function bubble(x,y,s,layout){const lines=layout?layout.lines:wrap(s.toUpperCase(),18),w=layout?layout.w:Math.max(...lines.map(l=>tw(l,1)))+8,h=layout?layout.h:lines.length*9+4;
+  let bx=layout?layout.x:Math.max(2,Math.min(318-w,Math.round(x-w/2))),by=layout?layout.y:Math.max(2,Math.round(y-h));
+  const alpha=G.globalAlpha,opacity=layout?.opacity??1;G.save();G.globalAlpha=alpha*opacity;
   R(bx-1,by,w+2,h,'#24161e');R(bx,by-1,w,h+2,'#24161e');R(bx,by,w,h,'#f2e6d0');R(bx,by+h-2,w,1,'#c8b8a4');
-  const px=Math.max(bx+3,Math.min(bx+w-5,Math.round(x)));R(px-1,by+h,4,2,'#24161e');R(px,by+h,2,1,'#f2e6d0');R(px,by+h+2,2,1,'#24161e');
-  lines.forEach((l,i)=>txt(l,bx+4,by+3+i*9,'#24161e',1));}
+  const px=Math.max(bx+3,Math.min(bx+w-5,Math.round(x))),py=Math.max(by+3,Math.min(by+h-4,Math.round(y+8))),tail=layout?layout.tail:'bottom';
+  if(tail==='bottom'){R(px-1,by+h,4,2,'#24161e');R(px,by+h,2,1,'#f2e6d0');R(px,by+h+2,2,1,'#24161e');}
+  else if(tail==='top'){R(px-1,by-3,4,2,'#24161e');R(px,by-2,2,1,'#f2e6d0');R(px,by-4,2,1,'#24161e');}
+  else if(tail==='right'){R(bx+w,py-1,3,4,'#24161e');R(bx+w,py,2,2,'#f2e6d0');R(bx+w+3,py,1,2,'#24161e');}
+  else{R(bx-3,py-1,3,4,'#24161e');R(bx-2,py,2,2,'#f2e6d0');R(bx-4,py,1,2,'#24161e');}
+  G.globalAlpha=alpha*Math.min(1,opacity+.25);lines.forEach((l,i)=>txt(l,bx+4,by+3+i*9,'#24161e',1));G.restore();}
 function panel(x,y,w,h){R(x-2,y-2,w+4,h+4,'#0e0a12');R(x,y,w,h,'#2a1f2c');R(x+1,y+1,w-2,1,'#7a6470');R(x+1,y+h-2,w-2,1,'#4a3a46');R(x+1,y+1,1,h-2,'#7a6470');R(x+w-2,y+1,1,h-2,'#4a3a46');}
 function sunMoon(x,y,t){if(t<1){disc(x+3,y+3,3,'#e8e0b8');disc(x+5,y+2,2,'#1a121c');}else{disc(x+3,y+3,2,'#f8c840');R(x+3,y-1,1,1,'#f8c840');R(x+3,y+7,1,1,'#f8c840');R(x-1,y+3,1,1,'#f8c840');R(x+7,y+3,1,1,'#f8c840');}}
 function drawHUD(){
@@ -73,8 +133,11 @@ function drawHUD(){
   if(S.cp>=0){flagIcon(224,3);txt(String(S.cp+1),234,4,'#f8c840');}
   zhead(264,3);txt(S.zombies+'/'+MAXZ,274,4,S.zombies>=4?'#e04a3a':'#9dbb6c');
 }
-function drawBanner(){if(!L.banner)return;const b=L.banner;const w=Math.max(tw(b.a,2),tw(b.b,1),tw(b.c||'',1))+20;const h=b.c?42:32;const x=160-w/2,y=88;
-  panel(x,y,w,h);txt(b.a,160,y+6,'#f8c840',2,'c','#140a14');txt(b.b,160,y+22,'#f2e6d0',1,'c');if(b.c)txt(b.c,160,y+31,'#9a8aa8',1,'c');}
+function drawBanner(){const r=noticeLayout(L.banner,Math.floor(S.clock/1.4));if(!r){noticeState=null;return;}
+  if(!noticeState||noticeState.level!==L||noticeState.banner!==L.banner)noticeState={level:L,banner:L.banner};
+  const outer={x:r.x-2,y:r.y-2,w:r.w+4,h:r.h+4},opacity=overlayOpacity(noticeState,actionRects().some(b=>rectsOverlap(outer,b))),alpha=G.globalAlpha;
+  const y=r.y+OY;G.save();G.globalAlpha=alpha*opacity;panel(r.x,y,r.w,r.h);G.globalAlpha=alpha*Math.min(1,opacity+.25);
+  txt(r.lines[0],160,y+3,'#f8c840',1,'c','#140a14');if(r.lines[1])txt(r.lines[1],160,y+14,'#f2e6d0',1,'c');G.restore();}
 function drawRap(){
   const r=L.rap;
   const y=document.body.hasAttribute('data-kb-overlay')?desktopRapY:150;
