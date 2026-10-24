@@ -87,7 +87,7 @@ function draw(){
     if(L.grace>0&&m==='play')txtO(L.grace>.5?'GET READY':'GO!',160,96,'#f8c840',2,'c','#140a14');
     if(L.vibe>0)txtO('VIBING '+Math.ceil(L.vibe),160,22,'#f0a0c8',1,'c','#140a14');}
   if(m==='rap')drawRap();
-  if(m==='pause')drawCenterCard('PAUSED','#f8c840',[[KT('P OR ENTER TO RESUME','TAP RESUME TO PLAY ON')],[KT('R TO RESTART FROM LEVEL '+CFG.startLevel,'RESTART BEGINS AGAIN AT LEVEL '+CFG.startLevel),'#9a8aa8'],[KT('Q TO QUIT TO TITLE','QUIT GOES BACK TO THE TITLE'),'#9a8aa8'],[KT('M SOUND ','SOUND ')+(muted?'OFF':'ON'),'#9a8aa8']],'');
+  if(m==='pause')drawCenterCard('PAUSED','#f8c840',[[KT('P OR ENTER TO RESUME','TAP RESUME TO PLAY ON')],[KT('R TO RESTART FROM LEVEL 1','RESTART BEGINS AGAIN AT LEVEL 1'),'#9a8aa8'],[KT('Q TO QUIT TO TITLE','QUIT GOES BACK TO THE TITLE'),'#9a8aa8'],[KT('M SOUND ','SOUND ')+(muted?'OFF':'ON'),'#9a8aa8']],'');
   if(m==='caught'){const cc=L.catcher?FOEQ[L.catcher].card:['ZOMBIFIED!','YOU PUKED. YOU TURNED. YOU RESTART.'];if(S.t>1.3)drawCenterCard(cc[0],'#9dbb6c',[[cc[1]],['NEXT ROUND: '+Math.min(S.zombies+1,MAXZ+1)+' ZOMBIES',S.zombies+1>MAXZ?'#e04a3a':'#9a8aa8']],'');}
   if(m==='clear'){const lines=[[L.d.why[0]],[L.d.why[1],'#9a8aa8'],['ESCAPE BONUS +'+L.bonus,'#9dbb6c'],[CFG.escapeBonus+' X LEVEL '+(S.level+1)+' X '+S.zombies+' ZOMBIE'+(S.zombies>1?'S':''),'#9a8aa8']];
     if(L.grannySaved)lines.push(['GRANNY SAFE AT SUNRISE +'+L.grannyBonus,'#f8c840']);

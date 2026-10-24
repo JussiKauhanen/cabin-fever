@@ -5,7 +5,7 @@ let L=null;
 const keys={};
 const tkeys={}; // mobile: directions held on the touch stick
 const down=k=>!!keys[k]||!!tkeys[k];
-function startGame(){S.score=0;S.zombies=1;S.level=CFG.startLevel-1;S.won=false;S.stats={mags:0,lines:0,caught:0,esc:0,reached:'L1'};S.lastIdx=-1;S.cp=-1;toIntro(false);}
+function startGame(){S.score=0;S.zombies=1;S.level=0;S.won=false;S.stats={mags:0,lines:0,caught:0,esc:0,reached:'L1'};S.lastIdx=-1;S.cp=-1;toIntro(false);}
 function toIntro(recap){if(!recap)S.lvScore=S.score;setupLevel();L.recap=recap;S.mode='intro';S.t=0;}
 function newZombie(x,y,i){return {x,y,dir:0,anim:0,spd:CFG.zombieSpeed+i*1.5+Math.random()*4,pukeT:3+Math.random()*3+i*.8,puke:0,puked:false,read:0,readK:1,bubbleT:1.5+Math.random()*3+i*1.4,say:'',sayT:0,lure:null,still:0};}
 function setupLevel(){

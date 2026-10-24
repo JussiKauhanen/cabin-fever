@@ -1,7 +1,6 @@
 "use strict";
 /* Tunables. Change numbers here; nothing else needs to move. Times are seconds, speeds px/second. */
 const CFG={
-  startLevel:3,             // temporary forest testing shortcut; set to 1 for the normal start
   playerSpeed:64,           // normal walking speed
   zombieSpeed:38,           // base zombie speed (each extra zombie gets +1.5)
   zombieSpeedupAtDawn:.25,  // zombies get up to 25% faster as night ends
