@@ -41,3 +41,4 @@ function drawHuman(c,x,y,dir,fr,P,o){
 function zhead(x,y){R(x,y,7,7,'#18160f');R(x+1,y+1,5,5,'#9dbb6c');R(x+1,y+1,5,2,'#3d4a36');R(x+2,y+4,1,1,'#ff4a3a');R(x+4,y+4,1,1,'#ff4a3a');}
 function magIcon(x,y){R(x,y,8,7,'#24161e');R(x+1,y+1,6,5,'#e05a8a');R(x+2,y+2,3,1,'#fff');R(x+3,y+4,2,1,'#f0d040');}
 function micIcon(x,y){R(x+1,y,5,5,'#24161e');R(x+2,y+1,3,3,'#c8c8d8');R(x+2,y+4,3,4,'#24161e');R(x+3,y+5,1,2,'#5a5a6a');}
+function flagIcon(x,y){R(x,y,2,8,'#24161e');R(x+1,y,7,5,'#24161e');R(x+2,y+1,5,3,'#f8c840');R(x+2,y+1,2,1,'#fff6c0');} // checkpoint held

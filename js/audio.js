@@ -23,7 +23,10 @@ const SFX={
   sun(){[523,659,784,1046,1318].forEach((f,i)=>tn(f,.3,'triangle',.08,null,anow()+i*.09));},
   win(){[523,523,784,1046,784,1046,1318].forEach((f,i)=>tn(f,.16,'square',.07,null,anow()+i*.11));},
   blip(){tn(880,.05,'square',.05);},
-  grumble(){tn(90+Math.random()*30,.25,'sawtooth',.035,60);}
+  grumble(){tn(90+Math.random()*30,.25,'sawtooth',.035,60);},
+  growl(){nz(.55,.16,320);tn(85,.55,'sawtooth',.08,48);},          // bear winding up a charge
+  spill(){nz(.3,.1,900,0,'bandpass');tn(320,.22,'triangle',.04,120);}, // spurgu spills his beer
+  flag(){[392,523,659,784,1046].forEach((f,i)=>tn(f,.12,'square',.06,null,anow()+i*.07));}  // checkpoint found
 };
 const seq={next:0,step:0,mode:null};
 function music(m){if(seq.mode!==m){seq.mode=m;seq.step=0;seq.next=anow()+.05;}}

@@ -12,4 +12,7 @@ function hx(h){return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parse
 function mix(a,b,t){const A=hx(a),B=hx(b);return 'rgb('+A.map((v,i)=>Math.round(v+(B[i]-v)*t)).join(',')+')';}
 function ss(a,b,x){const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);}
 const pick=a=>a[Math.floor(Math.random()*a.length)];
+/* mobile: TOUCH is true while playing by touch, so on-screen hints name buttons instead of keys. KT(keyboardText, touchText). */
+let TOUCH=!!(window.matchMedia&&matchMedia('(pointer: coarse)').matches);
+const KT=(k,t)=>TOUCH?t:k;
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
