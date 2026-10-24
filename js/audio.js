@@ -1,7 +1,7 @@
 "use strict";
 /* WebAudio chiptune: sound effects (SFX) and the step sequencer for music. */
-let AC=null,MG=null,NB=null,muted=false;
-function audioInit(){if(AC){if(AC.state==='suspended')AC.resume();return;}try{AC=new (window.AudioContext||window.webkitAudioContext)();MG=AC.createGain();MG.gain.value=.3;MG.connect(AC.destination);
+let AC=null,MG=null,NB=null,muted=false,audioPaused=false;
+function audioInit(){if(AC){if(AC.state==='suspended'&&S.mode!=='pause')AC.resume();return;}try{AC=new (window.AudioContext||window.webkitAudioContext)();MG=AC.createGain();MG.gain.value=.3;MG.connect(AC.destination);
   NB=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);const d=NB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;}catch(e){AC=null;}}
 const anow=()=>AC?AC.currentTime:0;
 function tn(f,d,type,v,f2,at){if(!AC||muted)return;const t=at||AC.currentTime;const o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);
@@ -30,7 +30,11 @@ const SFX={
 };
 const seq={next:0,step:0,mode:null};
 function music(m){if(seq.mode!==m){seq.mode=m;seq.step=0;seq.next=anow()+.05;}}
-function seqTick(){if(!AC||!seq.mode)return;const bpm=seq.mode==='rap'?96:seq.mode==='title'?112:84;const sd=60/bpm/4;
+function syncAudioPause(){if(!AC)return;const paused=S.mode==='pause';MG.gain.value=muted?0:.3;
+  if(paused===audioPaused)return;audioPaused=paused;
+  // Freezing the audio clock also holds queued notes, so resuming continues the same phrase.
+  (paused?AC.suspend():AC.resume()).catch(()=>{});}
+function seqTick(){syncAudioPause();if(!AC||audioPaused||!seq.mode)return;const bpm=seq.mode==='rap'?96:seq.mode==='title'?112:84;const sd=60/bpm/4;
   if(seq.next<AC.currentTime-.3)seq.next=AC.currentTime+.02;
   while(seq.next<AC.currentTime+.12){if(!muted)playStep(seq.mode,seq.step,seq.next);seq.next+=sd;seq.step++;}}
 function playStep(m,s,t){

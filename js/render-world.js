@@ -76,7 +76,9 @@ function drawHUD(){
 function drawBanner(){if(!L.banner)return;const b=L.banner;const w=Math.max(tw(b.a,2),tw(b.b,1),tw(b.c||'',1))+20;const h=b.c?42:32;const x=160-w/2,y=88;
   panel(x,y,w,h);txt(b.a,160,y+6,'#f8c840',2,'c','#140a14');txt(b.b,160,y+22,'#f2e6d0',1,'c');if(b.c)txt(b.c,160,y+31,'#9a8aa8',1,'c');}
 function drawRap(){
-  const r=L.rap;const y=150;panel(8,y,304,82);if(r.miss>0){R(8,y,304,1,'#e04a3a');R(8,y+81,304,1,'#e04a3a');R(8,y,1,82,'#e04a3a');R(311,y,1,82,'#e04a3a');}
+  const r=L.rap;
+  const y=document.body.hasAttribute('data-kb-overlay')?desktopRapY:150;
+  panel(8,y,304,82);if(r.miss>0){R(8,y,304,1,'#e04a3a');R(8,y+81,304,1,'#e04a3a');R(8,y,1,82,'#e04a3a');R(311,y,1,82,'#e04a3a');}
   const beat=Math.floor(S.clock*96/60)%4;
   txt('^ RAP BATTLE ^',16,y+6,'#d8dc5a',1);txt('LINES '+r.done,304,y+6,'#9dbb6c',1,'r');
   for(let i=0;i<4;i++)R(120+i*8,y+7,5,5,i===beat?'#f0a0c8':'#4a3a46');

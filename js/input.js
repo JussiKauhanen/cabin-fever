@@ -32,5 +32,5 @@ addEventListener('keydown',e=>{
   keys[e.key.toLowerCase()]=true;onKey(e);
 });
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
-addEventListener('blur',()=>{for(const k in keys)keys[k]=false;if(S.mode==='play')S.mode='pause';});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;if(S.mode==='play')S.mode='pause';syncAudioPause();});
 cv.addEventListener('pointerdown',()=>{cv.focus();audioInit();}); // mobile: taps and swipes on the screen are handled in touch.js

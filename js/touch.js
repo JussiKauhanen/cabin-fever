@@ -25,16 +25,19 @@ const IC={left:ico('M5 1h1v7H5zM4 2h1v5H4zM3 3h1v3H3zM2 4h1v1H2z'),right:ico('M3
 const clamp=(a,v,b)=>Math.max(a,Math.min(b,v));
 const apiFS=()=>!!(document.fullscreenElement||document.webkitFullscreenElement);
 const isFS=()=>apiFS()||!!(window.matchMedia&&matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches);
-let orient='',kbRowsN=4;
+const desktopPointer=window.matchMedia&&matchMedia('(hover: hover) and (pointer: fine)');
+let orient='',kbRowsN=4,desktopRapY=150;
 function layoutMobile(){
   const b=document.body,land=innerWidth>innerHeight*1.1,fs=isFS();orient=land?'land':'port';b.dataset.or=orient;
   if(fs)b.dataset.fs='1';else delete b.dataset.fs;
+  const kb=b.dataset.deck==='kb',overlay=kb&&b.dataset.mode==='rap'&&desktopPointer&&desktopPointer.matches;
+  b.toggleAttribute('data-kb-overlay',!!overlay);
   bfull.innerHTML=apiFS()?IC.unfull:IC.full;bfull.setAttribute('aria-label',apiFS()?'Leave full screen':'Full screen');
   const cs=getComputedStyle(app),gap=parseFloat(cs.rowGap)||10,sysH=land?34:36,
     W=app.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),H=app.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom);
-  const kb=b.dataset.deck==='kb',rg=6,n=kbRowsN;let s,kbH=0,topH=0,pw=0;
-  if(kb&&land){kbH=n*clamp(34,(H*.52-(n-1)*rg)/n,54)+(n-1)*rg;topH=H-kbH-gap;s=Math.min(topH/240,W*.46/320);}
-  else if(kb){kbH=n*clamp(42,(H*.34-(n-1)*rg)/n,54)+(n-1)*rg;pw=Math.min(W,560);const ph=b.dataset.mode==='rap'?pw*48/320:0;
+  const rg=6,n=kbRowsN;let s,kbH=0,topH=0,pw=0;
+  if(kb&&!overlay&&land){kbH=n*clamp(34,(H*.52-(n-1)*rg)/n,54)+(n-1)*rg;topH=H-kbH-gap;s=Math.min(topH/240,W*.46/320);}
+  else if(kb&&!overlay){kbH=n*clamp(42,(H*.34-(n-1)*rg)/n,54)+(n-1)*rg;pw=Math.min(W,560);const ph=b.dataset.mode==='rap'?pw*48/320:0;
     s=Math.min(W/320,(H-kbH-ph-sysH-3*gap)/240);}
   else if(land)s=Math.min((W-2*(fs?128:140)-2*gap)/320,H/240); // narrowest wings that still hold the controls
   else s=Math.min(W/320,(H-clamp(230,H*.4,400)-sysH-2*gap)/240);
@@ -45,7 +48,14 @@ function layoutMobile(){
   if(fs){const si=Math.floor(s*dpr)/dpr;s=si>=s*.97?si:Math.floor(320*s*dpr)/(320*dpr);}
   else if(dpr<2){if(s>=1)s=Math.floor(s);}else{const si=Math.floor(s*dpr)/dpr;if(si>=s*.92)s=si;}
   const cw=320*s,ch=240*s;cv.style.width=cw+'px';cv.style.height=ch+'px';
-  if(kb){kbEl.style.height=kbH+'px';pc.style.setProperty('--pml',land?'10px':'0px');if(land)pw=Math.min(W-cw-gap-10,(topH-sysH-gap)*320/48,640);
+  if(kb){
+    // Keep the original desktop rap panel above the keys without resizing the game screen.
+    if(overlay){kbH=n*clamp(34,(H*.34-(n-1)*rg)/n,54)+(n-1)*rg;
+      const bottom=app.getBoundingClientRect().bottom-parseFloat(cs.paddingBottom);
+      desktopRapY=clamp(18,Math.floor((bottom-kbH-gap-cv.getBoundingClientRect().top)/s)-84,150);
+      app.style.setProperty('--kb-bottom',cs.paddingBottom);}
+    else if(land)pw=Math.min(W-cw-gap-10,(topH-sysH-gap)*320/48,640);
+    kbEl.style.height=kbH+'px';kbEl.style.width=overlay?Math.min(W,cw,760)+'px':'';pc.style.setProperty('--pml',land&&!overlay?'10px':'0px');
     pc.style.width=pw+'px';pc.style.height=pw*48/320+'px';return;}
   // control sizes and a shared resting height for the stick and the button cluster
   let td,rd,sb,cys,cya;
@@ -176,10 +186,11 @@ function syncTouch(){const m=S.mode;if(m!==deckMode)applyDeck(m);
 /* ---- phone housekeeping ---- */
 const buzz=p=>{if(TOUCH&&!muted&&navigator.vibrate)try{navigator.vibrate(p);}catch(_){}};
 for(const [k,p] of [['caught',[70,50,140]],['slip',30]]){const f=SFX[k];SFX[k]=function(){buzz(p);return f.apply(SFX,arguments);};}
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)return;for(const k in keys)keys[k]=false;releaseStick();if(S.mode==='play')S.mode='pause';});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)return;for(const k in keys)keys[k]=false;releaseStick();if(S.mode==='play')S.mode='pause';syncAudioPause();});
 for(const t of ['gesturestart','gesturechange','dblclick'])document.addEventListener(t,e=>e.preventDefault());
 document.addEventListener('contextmenu',e=>{if(!(e.target.closest&&e.target.closest('#share')))e.preventDefault();});
 app.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
 for(const t of ['touchend','click'])addEventListener(t,()=>audioInit(),true); // iOS unlocks audio on touch end
 if(window.visualViewport)visualViewport.addEventListener('resize',()=>layoutMobile());
+if(desktopPointer)desktopPointer.addEventListener('change',layoutMobile);
 addEventListener('orientationchange',()=>setTimeout(layoutMobile,150));

@@ -29,9 +29,9 @@ body{color:var(--bone);font-family:var(--pix);overflow:hidden;touch-action:none;
 [data-or=land] #app{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);
   grid-template-areas:"sys screen acts" "stick screen acts"}
 /* keyboard screens (rap, initials): one full-width keyboard at the bottom, the line to type right above it */
-[data-or=port][data-deck=kb] #app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;
+[data-or=port][data-deck=kb]:not([data-kb-overlay]) #app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;
   grid-template-areas:"screen" "sys" "prompt" "kb"}
-[data-or=land][data-deck=kb] #app{grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;
+[data-or=land][data-deck=kb]:not([data-kb-overlay]) #app{grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;
   grid-template-areas:"screen sys" "screen prompt" "kb kb"}
 
 #screen{grid-area:screen;display:flex;align-items:center;justify-content:center;min-width:0;min-height:0}
@@ -49,8 +49,8 @@ body{color:var(--bone);font-family:var(--pix);overflow:hidden;touch-action:none;
 /* ---- system strip: pause / drop mic / sound / full screen ---- */
 #sys{grid-area:sys;display:flex;align-items:center;gap:6px;min-width:0}
 #sys .grow{flex:1}
-[data-or=land]:not([data-deck=kb]) #sys{justify-content:flex-end;box-sizing:border-box;padding:0 10px 0 4px} /* mirrors the right-hand menu: same gap to the screen */
-[data-or=land]:not([data-deck=kb]) #sys .grow{display:none}
+[data-or=land]:not([data-deck=kb]) #sys,[data-or=land][data-kb-overlay] #sys{justify-content:flex-end;box-sizing:border-box;padding:0 10px 0 4px} /* mirrors the right-hand menu: same gap to the screen */
+[data-or=land]:not([data-deck=kb]) #sys .grow,[data-or=land][data-kb-overlay] #sys .grow{display:none}
 .sq{width:44px;height:36px;flex:none}
 [data-or=land] .sq{width:34px;height:34px}
 #bpause,#bdrop{display:none}
@@ -60,14 +60,14 @@ body{color:var(--bone);font-family:var(--pix);overflow:hidden;touch-action:none;
 #bdrop{height:36px;padding:0 12px;font-size:9px;color:var(--blood);border-color:var(--blood)}
 #bdrop.hit{background:var(--blood);color:var(--ink)}
 [data-deck=kb] #bfull{display:none!important}
-[data-or=land][data-deck=kb] #sys{padding-left:10px}
+[data-or=land][data-deck=kb]:not([data-kb-overlay]) #sys{padding-left:10px}
 
 /* ---- which panel shows (body data-deck / data-mode, set by touch.js) ---- */
 #stick,#acts,#menu,#prompter,#kb{display:none;min-width:0;min-height:0}
 [data-deck=play] #stick,[data-deck=play] #acts{display:block}
 [data-deck=menu] #menu{display:flex}
 [data-deck=kb] #kb{display:grid}
-[data-deck=kb][data-mode=rap] #prompter,[data-or=land][data-deck=kb][data-mode=entry] #prompter{display:block}
+[data-deck=kb][data-mode=rap]:not([data-kb-overlay]) #prompter,[data-or=land][data-deck=kb][data-mode=entry] #prompter{display:block}
 [data-mode=caught] #stick,[data-mode=caught] #acts{opacity:.3;pointer-events:none}
 
 /* ---- stick: rests level with the buttons, jumps under the thumb, follows a drifting thumb ---- */
@@ -123,6 +123,9 @@ body{color:var(--bone);font-family:var(--pix);overflow:hidden;touch-action:none;
 #kb{grid-area:kb;align-self:end;justify-self:center;width:100%;max-width:760px;
   grid-template-columns:repeat(var(--cols),minmax(0,1fr));grid-template-rows:repeat(var(--rows),minmax(0,1fr));gap:6px 4px;touch-action:none}
 [data-or=port] #kb{max-width:560px}
+/* Desktop rap controls overlay the normal game layout instead of taking space from it. */
+[data-kb-overlay] #kb{position:absolute;left:0;right:0;margin:0 auto;z-index:1}
+[data-kb-overlay] #kb{bottom:var(--kb-bottom)}
 .k{font-size:14px!important;min-width:0;min-height:0;border-width:2px!important;border-color:var(--shade)!important}
 .k.fn{font-size:9px!important;color:var(--puke);border-color:var(--rim)!important}
 .k.wide{font-size:9px!important;color:var(--mute)}
