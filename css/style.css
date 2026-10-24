@@ -1,20 +1,142 @@
-/* One integer-scaled 320x240 arcade screen, centred on a near-black cabinet. */
+/* The 320x240 arcade screen with an arcade control panel: under the screen in portrait,
+   on both sides of it in landscape. Every colour comes from the game's own palette.
+   touch.js sets the canvas size and the control sizes (--td, --rd, --sb) and positions (--cys, --cya). */
 :root{
   --void:#0f0a12; --cab:#2a1f2c; --rim:#7a6470; --bone:#f2e6d0; --puke:#d8dc5a; --blood:#e04a3a;
+  --ink:#140a14; --shade:#4a3a46; --mute:#9a8aa8; --gold:#f8c840;
+  --pink:#e05a8a; --pinklt:#f0a0c8; --pinkdk:#a83a64; --pukelt:#f0f4a0; --pukedk:#8a9a2a;
+  --red:#e04a3a; --redlt:#f07050; --reddk:#9a2424;
   --pix:'Press Start 2P', ui-monospace, 'Courier New', monospace;
   color-scheme:dark;
 }
-html,body{height:100%}
+html,body{height:100%;margin:0;background:var(--void);overscroll-behavior:none}
 [hidden]{display:none!important}
-body{background:var(--void);color:var(--bone);margin:0;display:flex;align-items:center;justify-content:center;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px;
-  box-sizing:border-box;overflow:hidden;font-family:var(--pix)}
+body{color:var(--bone);font-family:var(--pix);overflow:hidden;touch-action:none;-webkit-text-size-adjust:100%;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+
+/* ---- layout ---- */
+#app{position:fixed;inset:0;display:grid;--gap:10px;gap:var(--gap);box-sizing:border-box;
+  padding-top:max(10px,env(safe-area-inset-top,0px));padding-bottom:max(10px,env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+/* full screen: thin margins and a slim frame, so the game screen grows on every side */
+[data-fs] #app{--gap:6px;
+  padding-top:max(6px,env(safe-area-inset-top,0px));padding-bottom:max(6px,env(safe-area-inset-bottom,0px));
+  padding-left:max(6px,env(safe-area-inset-left,0px));padding-right:max(6px,env(safe-area-inset-right,0px))}
+
+/* portrait: screen, system strip, then stick | buttons.  landscape: stick wing | screen | button wing */
+[data-or=port] #app{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);
+  grid-template-areas:"screen screen" "sys sys" "stick acts"}
+[data-or=land] #app{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);
+  grid-template-areas:"sys screen acts" "stick screen acts"}
+/* keyboard screens (rap, initials): one full-width keyboard at the bottom, the line to type right above it */
+[data-or=port][data-deck=kb] #app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;
+  grid-template-areas:"screen" "sys" "prompt" "kb"}
+[data-or=land][data-deck=kb] #app{grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;
+  grid-template-areas:"screen sys" "screen prompt" "kb kb"}
+
+#screen{grid-area:screen;display:flex;align-items:center;justify-content:center;min-width:0;min-height:0}
 #g{display:block;image-rendering:pixelated;image-rendering:crisp-edges;background:#000;outline:none;
   box-shadow:0 0 0 3px var(--cab),0 0 0 6px var(--void),0 0 0 8px #3a2c3a,0 24px 70px #000}
-#share{position:fixed;inset:0;background:rgba(10,6,14,.9);display:flex;align-items:center;justify-content:center;z-index:5;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
-#share .box{display:flex;flex-direction:column;gap:14px;align-items:center;max-width:960px;width:100%}
-#cardimg{width:100%;max-width:960px;image-rendering:pixelated;border:3px solid var(--rim);background:#000}
+[data-fs] #g{box-shadow:0 0 0 3px var(--cab),0 0 0 5px #3a2c3a}
+
+/* ---- buttons, shared look (same as the share dialog buttons) ---- */
+:where(#app) button{font:inherit;font-size:11px;color:var(--bone);background:var(--cab);border:3px solid var(--rim);border-radius:0;
+  margin:0;padding:0;display:flex;align-items:center;justify-content:center;gap:6px;line-height:1.2;letter-spacing:.04em;
+  cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none}
+:where(#app) button svg{width:18px;height:18px;fill:currentColor;shape-rendering:crispEdges;flex:none}
+:where(#app) button:focus-visible{outline:3px solid var(--puke);outline-offset:2px}
+
+/* ---- system strip: pause / drop mic / sound / full screen ---- */
+#sys{grid-area:sys;display:flex;align-items:center;gap:6px;min-width:0}
+#sys .grow{flex:1}
+[data-or=land]:not([data-deck=kb]) #sys{justify-content:flex-end;box-sizing:border-box;padding:0 10px 0 4px} /* mirrors the right-hand menu: same gap to the screen */
+[data-or=land]:not([data-deck=kb]) #sys .grow{display:none}
+.sq{width:44px;height:36px;flex:none}
+[data-or=land] .sq{width:34px;height:34px}
+#bpause,#bdrop{display:none}
+[data-mode=play] #bpause,[data-mode=pause] #bpause,[data-mode=caught] #bpause{display:flex}
+[data-mode=pause] #bpause{color:var(--gold);border-color:var(--gold)}
+[data-mode=rap] #bdrop{display:flex}
+#bdrop{height:36px;padding:0 12px;font-size:9px;color:var(--blood);border-color:var(--blood)}
+#bdrop.hit{background:var(--blood);color:var(--ink)}
+[data-deck=kb] #bfull{display:none!important}
+[data-or=land][data-deck=kb] #sys{padding-left:10px}
+
+/* ---- which panel shows (body data-deck / data-mode, set by touch.js) ---- */
+#stick,#acts,#menu,#prompter,#kb{display:none;min-width:0;min-height:0}
+[data-deck=play] #stick,[data-deck=play] #acts{display:block}
+[data-deck=menu] #menu{display:flex}
+[data-deck=kb] #kb{display:grid}
+[data-deck=kb][data-mode=rap] #prompter,[data-or=land][data-deck=kb][data-mode=entry] #prompter{display:block}
+[data-mode=caught] #stick,[data-mode=caught] #acts{opacity:.3;pointer-events:none}
+
+/* ---- stick: rests level with the buttons, jumps under the thumb, follows a drifting thumb ---- */
+#stick{grid-area:stick;position:relative;overflow:hidden;touch-action:none;--sb:120px;--kn:calc(var(--sb)*.44)}
+#stick .base{position:absolute;left:50%;top:var(--cys,50%);width:var(--sb);height:var(--sb);margin:calc(var(--sb)/-2) 0 0 calc(var(--sb)/-2);
+  border-radius:50%;background:var(--ink);box-shadow:0 0 0 3px var(--rim),inset 0 0 0 7px var(--cab);opacity:.45;transition:opacity .2s;pointer-events:none}
+#stick.on .base{opacity:1;transition:none}
+#stick .knob{position:absolute;left:50%;top:50%;width:var(--kn);height:var(--kn);margin:calc(var(--kn)/-2) 0 0 calc(var(--kn)/-2);border-radius:50%;
+  background:var(--red);box-shadow:0 0 0 3px var(--ink),inset -5px -6px 0 var(--reddk),inset 4px 4px 0 var(--redlt)}
+#stick .lbl{position:absolute;left:0;right:0;top:calc(var(--cys,50%) + var(--sb)/2 + 10px);text-align:center;font-size:8px;line-height:1.4;color:var(--mute);pointer-events:none}
+#stick.on .lbl{visibility:hidden}
+
+/* ---- arcade buttons: RAP tucked up-left of THROW, one tight cluster ---- */
+#acts{grid-area:acts;position:relative;--td:96px;--rd:74px}
+#acts .pad{position:absolute;left:50%;top:var(--cya,50%);width:calc(var(--td) + var(--rd)*.85);height:calc(var(--td) + var(--rd)*.8);transform:translate(-50%,-50%)}
+.act{position:absolute;border-radius:50%!important;border:4px solid var(--ink)!important;color:var(--ink)!important;
+  font-size:10px!important;flex-direction:column;transition:transform .05s}
+#bthrow{right:0;bottom:0;width:var(--td);height:var(--td);background:var(--pink);
+  box-shadow:0 0 0 3px var(--rim),inset -6px -7px 0 var(--pinkdk),inset 5px 5px 0 var(--pinklt),0 6px 0 3px var(--ink)}
+#bthrow.hit{transform:translateY(5px);box-shadow:0 0 0 3px var(--rim),inset -6px -7px 0 var(--pinkdk),inset 5px 5px 0 var(--pinklt),0 1px 0 3px var(--ink)}
+#bthrow.empty{filter:saturate(.35) brightness(.75)}
+#brap{left:0;top:0;width:var(--rd);height:var(--rd);background:var(--puke);font-size:9px!important;
+  box-shadow:0 0 0 3px var(--rim),inset -5px -6px 0 var(--pukedk),inset 4px 4px 0 var(--pukelt),0 6px 0 3px var(--ink)}
+#brap.hit{transform:translateY(5px);box-shadow:0 0 0 3px var(--rim),inset -5px -6px 0 var(--pukedk),inset 4px 4px 0 var(--pukelt),0 1px 0 3px var(--ink)}
+#brap:not(.live){filter:grayscale(.9) brightness(.55)}
+#brap.live{animation:mic 1s steps(1) infinite}
+@keyframes mic{50%{box-shadow:0 0 0 3px var(--gold),inset -5px -6px 0 var(--pukedk),inset 4px 4px 0 var(--pukelt),0 6px 0 3px var(--ink),0 0 0 10px rgba(216,220,90,.22)}}
+#nmags{position:absolute;top:-8px;right:-6px;padding:5px 5px 4px;background:var(--ink);color:var(--pinklt);border:2px solid var(--rim);font-size:9px;line-height:1}
+#bthrow.empty #nmags{color:var(--shade)}
+
+/* ---- menu buttons (Enter, page arrows, quit, share card) ---- */
+#menu{flex-direction:column;align-items:center;justify-content:center;gap:14px}
+[data-or=port] #menu{grid-column:1/-1;grid-row:3}
+[data-or=land] #menu{grid-area:acts;gap:10px;box-sizing:border-box;padding:0 4px 0 10px} /* clear of the screen frame and the 3px button ring */
+.mrow{display:flex;gap:12px;justify-content:center;width:100%;max-width:300px}
+.mb{flex:1 1 auto;min-height:54px;padding:12px 10px;font-size:12px!important;text-align:center}
+.mb.sq{flex:0 0 64px;height:54px}
+.mb.go{background:var(--gold);color:var(--ink);border-color:var(--ink);font-size:14px!important;min-height:64px;
+  box-shadow:0 0 0 3px var(--rim),0 5px 0 3px var(--ink)}
+[data-or=land] .mrow{gap:8px;flex-wrap:wrap}
+[data-or=land] .mb{min-height:42px;padding:8px 4px;font-size:9px!important}
+[data-or=land] .mb.sq{flex:1 1 0;height:42px}
+[data-or=land] .mb.go{min-height:50px;font-size:11px!important}
+.mb:active{transform:translateY(3px)}
+.mb.go:active{box-shadow:0 0 0 3px var(--rim),0 2px 0 3px var(--ink)}
+.mb.wait{opacity:.35}
+.mhint{font-size:8px;line-height:1.7;color:var(--mute);text-align:center;margin:0}
+
+/* ---- the line to type, at double size (rap; initials in landscape) ---- */
+#prompter{grid-area:prompt;align-self:end;justify-self:center;margin-left:var(--pml,0px);box-sizing:border-box;image-rendering:pixelated;border:3px solid var(--rim);background:var(--ink)}
+
+/* ---- on-screen keyboard: one standard QWERTY block, never split ---- */
+#kb{grid-area:kb;align-self:end;justify-self:center;width:100%;max-width:760px;
+  grid-template-columns:repeat(var(--cols),minmax(0,1fr));grid-template-rows:repeat(var(--rows),minmax(0,1fr));gap:6px 4px;touch-action:none}
+[data-or=port] #kb{max-width:560px}
+.k{font-size:14px!important;min-width:0;min-height:0;border-width:2px!important;border-color:var(--shade)!important}
+.k.fn{font-size:9px!important;color:var(--puke);border-color:var(--rim)!important}
+.k.wide{font-size:9px!important;color:var(--mute)}
+.k.go{background:var(--gold);color:var(--ink);border-color:var(--ink)!important;font-size:12px!important}
+.k.next{color:var(--gold);border-color:var(--gold)!important}
+.k.hit{background:var(--gold);color:var(--ink);border-color:var(--gold)!important}
+
+/* ---- share card dialog ---- */
+#share{position:fixed;inset:0;background:rgba(10,6,14,.92);display:flex;z-index:5;overflow:auto;box-sizing:border-box;
+  touch-action:auto;-webkit-user-select:auto;user-select:auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:max(16px,env(safe-area-inset-top,0px));padding-bottom:max(16px,env(safe-area-inset-bottom,0px))}
+#share .box{display:flex;flex-direction:column;gap:14px;align-items:center;max-width:960px;width:100%;margin:auto}
+#cardimg{width:100%;max-width:960px;image-rendering:pixelated;border:3px solid var(--rim);background:#000;-webkit-touch-callout:default}
 #share .hint,#share .msg{font-size:10px;line-height:1.7;color:var(--bone);margin:0;text-align:center}
 #share .msg{color:var(--puke);min-height:1.7em}
 #share .row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
@@ -22,4 +144,8 @@ body{background:var(--void);color:var(--bone);margin:0;display:flex;align-items:
   border:3px solid var(--rim);cursor:pointer;letter-spacing:.04em}
 #share button:hover{background:#3a2c3a;color:var(--puke)}
 #share button:focus-visible{outline:3px solid var(--puke);outline-offset:2px}
-@media (prefers-reduced-motion: reduce){ #share button{transition:none} }
+
+@media (prefers-reduced-motion: reduce){
+  #share button,.act{transition:none}
+  #brap.live{animation:none;box-shadow:0 0 0 3px var(--gold),inset -5px -6px 0 var(--pukedk),inset 4px 4px 0 var(--pukelt),0 6px 0 3px var(--ink)}
+}

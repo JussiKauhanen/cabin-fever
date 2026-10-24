@@ -14,6 +14,8 @@ const CFG={
   rapBaseTime:2.4, rapTimePerChar:.26, // time limit per rap line = base + perChar * length (gets 7% tighter per line)
   vibeBase:3, vibePerLine:4, // headbob time after a rap = base + perLine * lines completed
   escapeBonus:1000,         // x level number x zombie count
-  maxZombies:5              // getting caught with this many on the map = game over
+  maxZombies:5,             // getting caught with this many on the map = game over
+  touchRapSlack:1.8,        // mobile: rap time limit x this when typed on the touch keyboard (thumbs are slower than ten fingers)
+  touchRapHint:true         // mobile: light up the next key to press on the touch keyboard
 };
 const MAXZ=CFG.maxZombies;

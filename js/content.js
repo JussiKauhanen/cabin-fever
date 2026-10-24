@@ -4,3 +4,28 @@ const QUOTES=["AI IS THE END OF ART.","REAL ART IS PAIN.","TOYOTA IS THE BEST CA
 const READQ=["OOH. A 40-PAGE ESSAY ON A CHAIR.","THIS DANCER GETS IT. PAIN.","INTERPRETIVE. VERY BRAVE.","SAYS HERE TOYOTA IS ART.","PRINT ISN'T DEAD. UNLIKE ME.","HMM. BALLET, BUT ANGRY.","WAS THIS MADE BY AI? I'M FURIOUS.","SUCH NEGATIVE SPACE."];
 const VIBEQ=["OK THIS SLAPS.","REAL ART IS... THIS.","NOD. NOD. NOD.","BETTER THAN VINYL.","BRAIN... FEELS... GROOVY."];
 const RAPS=["zombie in the kitchen but i keep it clean","you say real art is pain so feel my rhyme","toyota in the driveway and it runs on time","puke upon the floor but i will not slip","cabin in the woods with a beat so tight","keep on nodding zombie till the morning light","read your magazine and get out of my scene","ai did not write this it came from my spleen","mic in my hand and my sneakers on the floor","six in the morning and i run out the door","you only like vinyl i only like to run","rap until the rising of the big old sun","boom bap clap got a zombie in a trance","put down the brains and learn to dance"];
+/* Guests on the new levels. say = hot takes, read = magazine reactions, vibe = rap reactions, caught = their line when they get you,
+   card = title + line on the ZOMBIFIED card. Extra lists are used by that guest's own move (pick, nap, spill, wander). */
+const FOEQ={
+ bear:{say:["I AM THE NATIONAL ANIMAL. RESPECT.","HIBERNATION IS SELF-CARE.","GRRR. MEANS HELLO.","EVERYMAN'S RIGHT. EVERYBEAR'S TOO.","HONEY IS JUST BEE SOURDOUGH.","NOT A TEDDY. DO NOT HUG.","I WAS HERE BEFORE THE HIKING APP.","SAUNA? I PREFER THE LAKE.","YOU SMELL LIKE SAUSAGE. NICE."],
+  read:["CAN'T READ. CAN EAT.","CRUNCHY. FOUR STARS.","PAPER IS JUST FLAT TREE.","TASTES LIKE INTERPRETIVE DANCE."],
+  vibe:["BEAR BOUNCE!","GRR-OOVY.","THIS IS MY HONEY JAM."],
+  rest:["HUFF.","PUFF.","HUFF HUFF."],
+  caught:"BEAR HUG. NO REFUNDS.",card:["BEAR HUG!","IT SQUEEZED. THEN A ZOMBIE TOOK OVER."]},
+ granny:{say:["THESE ARE MY CHANTERELLE SPOTS!","PUT ON A HAT, YOU'LL CATCH A COLD.","EAT SOMETHING, YOU'RE ALL BONES.","THAT ONE'S POISONOUS. LIKE YOUR MUSIC.","NORDIC WALKING, DEAR. KEEP UP.","I'VE OUTLIVED THREE BEARS.","IN MY DAY WE SKIED TO SCHOOL. UPHILL.","THE COFFEE IS READY. SIT DOWN.","WHO RAISED YOU? WOLVES?"],
+  pick:["KANTARELLI!","OOH, A PORCINI!","SUPPILOVAHVERO!","TATTI! MINE!"],
+  read:["OOH, A KNITTING PATTERN!","HOROSCOPE SAYS: RUN.","BALLET? IN MY DAY WE DANCED HUMPPA.","SUCH A NICE MAGAZINE, DEAR."],
+  vibe:["HUMPPA WAS BETTER.","OH MY, HOW MODERN!","GRANNY'S GOT MOVES."],
+  caught:"SIT. HAVE A PULLA.",card:["GRANNIED!","SHE MADE YOU EAT. THE PULLA WAS CURSED."]},
+ spurgu:{say:["HEY BUDDY, GOT A EURO?","I'M NOT DRUNK. THE ZOMBIES ARE.","THE OSTARI IS MY LIVING ROOM.","AWAKE SINCE 1997. GREAT YEAR.","THIS BENCH IS RESERVED. FOR ME.","KONTULA NEVER SLEEPS. NEITHER DO I.","LISTEN... WHAT WAS I SAYING?","I KNEW YOUR DAD. PROBABLY.","ONE MORE AND I'M GOING HOME. SINCE 2009."],
+  nap:["ZZZ...","JUST RESTING MY EYES."],
+  spill:["OOPS. MY BREAKFAST.","WHO MOVED THE FLOOR?"],
+  read:["IS THIS THE PUB QUIZ?","NO BEER ADS? BOO.","ART & DANCE? I DANCE. SOMETIMES."],
+  vibe:["THIS IS MY JAM!","TURN IT UP, BUDDY!","KARAOKE NIGHT!"],
+  caught:"NOW YOU OWE ME A EURO.",card:["CORNERED!","HE TALKED FOR AN HOUR. YOU TURNED."]},
+ nisti:{say:["BRO. BRO. BRO. LISTEN.","WANNA BUY A BIKE? IT'S NEW. TO ME.","I'M NOT RUNNING, I'M JOGGING FAST.","HAVE YOU SEEN MY OTHER SHOE?","I HAVE A BUSINESS IDEA. IT'S YOU.","SLEEP IS A SCAM, BRO.","CAN I BORROW YOUR PHONE? FOREVER?","TOTALLY CHILL. TOTALLY. CHILL.","MY COUSIN KNOWS A GUY IN VUOSAARI."],
+  wander:["WAIT, WHERE WAS I GOING?","OOH. SHINY."],
+  read:["TOO MANY WORDS, BRO.","I COULD SELL THIS.","WHOA. ART."],
+  vibe:["BRO THIS SLAPS!","SICK BEAT, BRO!","CAN'T STOP MOVING. NORMAL."],
+  caught:"BRO. YOU'RE ONE OF US NOW.",card:["SHAKEN DOWN!","HE BORROWED YOUR PHONE. AND YOUR BRAIN."]}
+};

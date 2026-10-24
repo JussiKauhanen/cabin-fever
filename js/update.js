@@ -15,7 +15,7 @@ function updFx(dt){
   for(const p of L.parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.vz-=(p.g==null?240:p.g)*dt;p.t-=dt;}
   L.parts=L.parts.filter(p=>p.t>0&&p.z>-1);
   for(const f of L.floats){f.t-=dt;f.y-=14*dt;}L.floats=L.floats.filter(f=>f.t>0);
-  if(L.g.lights==='l2'){L.smokeT-=dt;if(L.smokeT<=0){L.smokeT=.5;L.smoke.push({x:192,y:12,r:2,t:3});}for(const s of L.smoke){s.t-=dt;s.y-=8*dt;s.x+=4*dt;s.r+=dt*.8;}L.smoke=L.smoke.filter(s=>s.t>0);}
+  if(L.g.smoke){L.smokeT-=dt;if(L.smokeT<=0){L.smokeT=.5;L.smoke.push({x:L.g.smoke[0],y:L.g.smoke[1],r:2,t:3});}for(const s of L.smoke){s.t-=dt;s.y-=8*dt;s.x+=4*dt;s.r+=dt*.8;}L.smoke=L.smoke.filter(s=>s.t>0);}
   if(L.banner){L.banner.t-=dt;if(L.banner.t<=0)L.banner=null;}
 }
 function updPlay(dt){
@@ -23,6 +23,7 @@ function updPlay(dt){
   L.time+=dt;if(L.grace>0)L.grace-=dt;else S.score+=10*dt;
   if(!L.open&&L.time>=d.night){L.open=true;for(const [c,r] of L.g.doors)L.solid[r][c]=false;L.fields={};SFX.sun();
     L.banner={a:'6:00 AM - SUNRISE!',b:d.why[0],c:d.why[1],t:5.5};}
+  if(L.pending&&L.pending.length)waveTick(); // new levels: the next wave arrives
   // input
   let ix=(down('arrowright')||down('d')?1:0)-(down('arrowleft')||down('a')?1:0),iy=(down('arrowdown')||down('s')?1:0)-(down('arrowup')||down('w')?1:0);
   if(ix&&iy){ix*=.7071;iy*=.7071;}
@@ -42,7 +43,8 @@ function updPlay(dt){
   for(const it of L.items){it.t+=dt;if(it.type==='lure'){it.life-=dt;continue;}
     if(Math.hypot(it.x-p.x,it.y-p.y)<11){it.gone=true;
       if(it.type==='stash'){const n=Math.min(CFG.magsMax,p.mags+CFG.magsPerStash)-p.mags;p.mags+=n;S.score+=25;floater(it.x,it.y-14,'+'+(n||0)+' ART & DANCE MAGS','#f0a0c8');SFX.pick();}
-      else{p.mic=true;floater(it.x,it.y-14,'MIC! PRESS R TO RAP','#d8dc5a');SFX.mic();}}}
+      else if(it.type==='cp')gotCheckpoint(it);
+      else{p.mic=true;floater(it.x,it.y-14,KT('MIC! PRESS R TO RAP','MIC! TAP THE RAP BUTTON'),'#d8dc5a');SFX.mic();}}}
   L.items=L.items.filter(i=>!i.gone&&!(i.type==='lure'&&i.life<=0));
   // projectiles
   for(const pr of L.projs){const nx=pr.x+pr.vx*dt,ny=pr.y+pr.vy*dt;pr.t-=dt;pr.spin+=dt*20;
@@ -59,10 +61,11 @@ function updPlay(dt){
   // puddles
   for(const pd of L.puddles)pd.t-=dt;L.puddles=L.puddles.filter(pd=>pd.t>0);
   // caught?
-  if(L.grace<=0&&L.vibe<=0)for(const z of L.zs){if(z.read>0)continue;if(Math.hypot(z.x-p.x,z.y-p.y)<9){caught(z);break;}}
+  if(L.grace<=0&&L.vibe<=0)for(const z of L.zs){if(z.read>0||z.calm)continue;if(Math.hypot(z.x-p.x,z.y-p.y)<(z.cr||9)){caught(z);break;}}
 }
-function startRead(z){z.read=CFG.readTime;z.readK=1+Math.floor(Math.random()*2);z.lure=null;z.say=pick(READQ);z.sayT=3.5;S.stats.mags++;}
+function startRead(z){z.read=CFG.readTime;z.readK=1+Math.floor(Math.random()*2);z.lure=null;z.say=pick(READQ);z.sayT=3.5;S.stats.mags++;if(z.k)foeRead(z);}
 function updZombie(z,dt){
+  if(z.k){updFoe(z,dt);return;} // new levels: guests move their own way (enemies.js)
   z.bubbleT-=dt;if(z.sayT>0)z.sayT-=dt;
   if(z.bubbleT<=0){z.bubbleT=6+Math.random()*7;if(z.read<=0&&L.vibe<=0){z.say=pick(QUOTES);z.sayT=3.4;SFX.grumble();}}
   if(L.grace>0||L.vibe>0)return;
@@ -79,11 +82,13 @@ function updZombie(z,dt){
   if(Math.abs(sx)>Math.abs(sy))z.dir=sx>0?2:3;else z.dir=sy>0?0:1;
   if(mv<.05){z.still+=dt;if(z.still>.6){moveEnt(z,(Math.random()-.5)*6,(Math.random()-.5)*6);z.still=0;}}else z.still=0;
 }
-function spawnPuddle(x,y){const blobs=[[0,0,9,5]];const n=3+Math.floor(Math.random()*3);for(let i=0;i<n;i++)blobs.push([(Math.random()-.5)*14,(Math.random()-.5)*7,3+Math.random()*4,2+Math.random()*2]);
-  L.puddles.push({x,y,t:CFG.puddleLife,blobs,chunks:[...Array(4)].map(()=>[(Math.random()-.5)*12,(Math.random()-.5)*5])});}
+function spawnPuddle(x,y,beer){const blobs=[[0,0,9,5]];const n=3+Math.floor(Math.random()*3);for(let i=0;i<n;i++)blobs.push([(Math.random()-.5)*14,(Math.random()-.5)*7,3+Math.random()*4,2+Math.random()*2]);
+  L.puddles.push({x,y,beer:!!beer,t:CFG.puddleLife,blobs,chunks:[...Array(4)].map(()=>[(Math.random()-.5)*12,(Math.random()-.5)*5])});}
 function throwMag(){const p=L.p;if(p.mags<=0){floater(p.x,p.y-22,'NO MAGS!','#e04a3a');SFX.miss();return;}
   p.mags--;const [vx,vy]=dirVec(p.dir);L.projs.push({x:p.x+vx*6,y:p.y+vy*4,vx:vx*175,vy:vy*175,t:.55,spin:0,k:1+Math.floor(Math.random()*2)});SFX.throw();}
-function caught(z){S.mode='caught';S.t=0;S.stats.caught++;z.say='WELCOME TO THE CLUB.';z.sayT=3;SFX.caught();L.banner=null;}
+function gotCheckpoint(it){S.cp=S.level;S.cpScore=S.lvScore;S.score+=100;floater(it.x,it.y-22,'+100 CHECKPOINT!','#f8c840');
+  L.banner={a:'CHECKPOINT!',b:'GAME OVER? YOU CAN RETRY LEVEL '+(S.level+1)+'.',c:'',t:3};SFX.flag();}
+function caught(z){S.mode='caught';S.t=0;S.stats.caught++;z.say=z.k?FOEQ[z.k].caught:'WELCOME TO THE CLUB.';z.sayT=3;L.catcher=z.k||null;SFX.caught();L.banner=null;}
 function updCaught(dt){
   const p=L.p;if(S.t>.4&&S.t<1.9&&Math.random()<.9){for(let k=0;k<2;k++)L.parts.push({x:p.x,y:p.y+2,z:9,vx:(Math.random()-.5)*60,vy:20+Math.random()*30,vz:20+Math.random()*30,t:1,col:pick(['#b8c43a','#d8dc5a','#8a9a2a'])});}
   if(S.t>1.25&&!p.zombie){p.zombie=true;spawnPuddle(p.x,p.y+6);}
@@ -94,13 +99,13 @@ function updCaught(dt){
 function startRap(){const p=L.p;if(!p.mic){floater(p.x,p.y-22,'FIND A MIC FIRST','#e04a3a');SFX.miss();return;}
   p.mic=false;L.micT=CFG.micEvery;S.mode='rap';S.t=0;for(const k in keys)keys[k]=false;L.p.vx=L.p.vy=0;
   L.rap={done:0,pool:shuffle(RAPS.slice()),line:'',idx:0,t:0,tmax:1,miss:0,cool:1.2,fresh:0};newRapLine();}
-function newRapLine(){const r=L.rap;if(!r.pool.length)r.pool=shuffle(RAPS.slice());r.line=r.pool.pop();r.idx=0;r.tmax=(CFG.rapBaseTime+CFG.rapTimePerChar*r.line.length)*Math.max(.55,1-.07*r.done);r.t=r.tmax;}
+function newRapLine(){const r=L.rap;if(!r.pool.length)r.pool=shuffle(RAPS.slice());r.line=r.pool.pop();r.idx=0;r.tmax=(CFG.rapBaseTime+CFG.rapTimePerChar*r.line.length)*Math.max(.55,1-.07*r.done)*(TOUCH?CFG.touchRapSlack:1);r.t=r.tmax;}
 function updRap(dt){const r=L.rap;if(r.miss>0)r.miss-=dt;if(r.fresh>0)r.fresh-=dt;if(r.cool>0){r.cool-=dt;return;}r.t-=dt;if(r.t<=0)endRap();}
 function rapKey(e){const r=L.rap;if(e.key==='Escape'){endRap();return;}if(r.cool>0||e.repeat)return;
   const ch=e.key.toLowerCase();if(ch.length!==1)return;const exp=r.line[r.idx];
   if(ch===exp){r.idx++;S.score+=5;SFX.key();if(r.idx>=r.line.length){r.done++;S.stats.lines++;S.score+=150;r.fresh=1;r.cool=.7;SFX.line();newRapLine();}}
   else{r.miss=.25;r.t-=.4;SFX.miss();}}
 function endRap(){const r=L.rap;S.mode='play';
-  if(r.done>0){L.vibe=CFG.vibeBase+CFG.vibePerLine*r.done;L.banner={a:'ZOMBIES ARE VIBING!',b:r.done+' LINE'+(r.done>1?'S':'')+' = '+Math.round(L.vibe)+' SECONDS OF HEADBOPPING',c:'',t:2.6};for(const z of L.zs){z.say=pick(VIBEQ);z.sayT=2.5;z.bubbleT=Math.max(z.bubbleT,L.vibe);}}
+  if(r.done>0){L.vibe=CFG.vibeBase+CFG.vibePerLine*r.done;L.banner={a:'ZOMBIES ARE VIBING!',b:r.done+' LINE'+(r.done>1?'S':'')+' = '+Math.round(L.vibe)+' SECONDS OF HEADBOPPING',c:'',t:2.6};for(const z of L.zs){z.say=pick(z.k?FOEQ[z.k].vibe:VIBEQ);z.sayT=2.5;z.bubbleT=Math.max(z.bubbleT,L.vibe);}}
   else L.banner={a:'YOU CHOKED!',b:'THE ZOMBIES ARE NOT IMPRESSED.',c:'',t:2.2};
   L.rap=null;}

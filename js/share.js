@@ -11,7 +11,7 @@ function makeCard(){
   txt('HALL OF FAME  #'+(c0.rank+1),160,42,'#f8c840',1,'c','#140a14');
   panel(30,56,260,72);
   txt(c0.n,62,66,'#f0a0c8',3,'c','#140a14');txt(pad(c0.s,7),196,66,'#f2e6d0',3,'c','#140a14');
-  txt(c0.w==='ESC'?'ESCAPED BOTH LEVELS':'REACHED LEVEL '+String(c0.w).replace('L',''),160,96,c0.w==='ESC'?'#9dbb6c':'#f8c840',1,'c');
+  txt(c0.w==='ESC'?'ESCAPED ALL '+LEVELS.length+' LEVELS':'REACHED LEVEL '+String(c0.w).replace('L',''),160,96,c0.w==='ESC'?'#9dbb6c':'#f8c840',1,'c');
   txt((c0.z||1)+' ZOMBIES  '+(c0.lines||0)+' RAP LINES  '+(c0.mags||0)+' MAGS READ',160,110,'#c8b8c8',1,'c');
   drawHuman(x,34,166,2,Math.floor(S.clock*6),PP,{});drawHuman(x,286,166,3,0,PZ,{puke:true});
   for(let i=0;i<5;i++)R(268-i*4,157+i,2,2,TG[i+1]);
@@ -19,13 +19,25 @@ function makeCard(){
   G=prevG;const [b,bx]=mk(960,540);bx.drawImage(c,0,0,960,540);return b;
 }
 function openShare(){const b=makeCard();document.getElementById('cardimg').src=b.toDataURL('image/png');cardBlob=null;try{b.toBlob(bl=>{cardBlob=bl;},'image/png');}catch(e){}
-  document.getElementById('smsg').textContent='';shareEl.hidden=false;document.getElementById('bcopy').focus();}
+  shareSetup(); // mobile
+  document.getElementById('smsg').textContent='';shareEl.hidden=false;if(!TOUCH)document.getElementById('bcopy').focus();}
 function closeShare(){shareEl.hidden=true;cv.focus();}
 document.getElementById('bclose').addEventListener('click',closeShare);
 document.getElementById('bcopy').addEventListener('click',()=>{const msg=document.getElementById('smsg');
   try{if(!cardBlob||!window.ClipboardItem)throw 0;navigator.clipboard.write([new ClipboardItem({'image/png':cardBlob})]).then(()=>{msg.textContent='Image copied. Paste it anywhere.';},()=>{msg.textContent='Copying images is blocked here. Right-click or long-press the image to save it.';});}
   catch(e){msg.textContent='Copying images is blocked here. Right-click or long-press the image to save it.';}});
 document.getElementById('btext').addEventListener('click',()=>{const c0=S.card||{n:'???',s:Math.floor(S.score),w:'L1'};const msg=document.getElementById('smsg');
-  const t=`${c0.n} scored ${c0.s.toLocaleString('en-US')} in CABIN FEVER${c0.w==='ESC'?' and escaped both levels':''}. The zombie still thinks Toyota is the best car.`;
+  const t=bragText();
   const done=()=>{msg.textContent='Brag text copied.';};
   try{navigator.clipboard.writeText(t).then(done,()=>{msg.textContent=t;});}catch(e){msg.textContent=t;}});
+/* mobile: Share button for the phone's share sheet, plus touch wording. */
+function bragText(){const c0=S.card||{n:'???',s:Math.floor(S.score),w:'L1'};
+  return `${c0.n} scored ${c0.s.toLocaleString('en-US')} in CABIN FEVER${c0.w==='ESC'?' and escaped all '+LEVELS.length+' levels':''}. The zombie still thinks Toyota is the best car.`;}
+function shareSetup(){let ok=false;try{ok=!!(navigator.canShare&&navigator.canShare({files:[new File([''],'cabin-fever.png',{type:'image/png'})]}));}catch(e){}
+  document.getElementById('bshare').hidden=!ok;document.getElementById('bclose').textContent=KT('Close (Esc)','Close');
+  document.querySelector('#share .hint').textContent=KT('Right-click or long-press the image to save it, or copy it straight to your clipboard.','Long-press the image to save it, or share or copy it with the buttons.');}
+document.getElementById('bshare').addEventListener('click',()=>{const msg=document.getElementById('smsg');
+  const fail=()=>{msg.textContent='Sharing is blocked here. Long-press the image to save it.';};
+  try{if(!cardBlob)throw 0;const f=new File([cardBlob],'cabin-fever.png',{type:'image/png'});
+    navigator.share({files:[f],text:bragText()}).then(()=>{msg.textContent='Shared.';},err=>{if(!err||err.name!=='AbortError')fail();});}
+  catch(e){fail();}});
