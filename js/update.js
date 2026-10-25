@@ -3,7 +3,7 @@
 function update(dt){
   S.t+=dt;
   const m=S.mode;
-  music(m==='title'||m==='entry'||m==='scores'?'title':m==='rap'?'rap':(m==='play'||m==='intro'||m==='pause')?'night':null);
+  music(m==='title'||m==='entry'||m==='scores'?'title':m==='rap'?'rap':(m==='play'||m==='intro'||m==='pause')?(L&&L.d.music||'night'):null);
   if(m==='title'){S.pageT+=dt;if(S.pageT>7){S.pageT=0;S.page=(S.page+1)%3;}return;}
   if(m==='intro'){if(S.t>(L.zs.some(z=>z.k==='granny')?CFG.grannyIntroTime:3.2)){S.mode='play';S.t=0;}return;}
   if(m==='play')updPlay(dt);
@@ -25,8 +25,9 @@ function updPlay(dt){
     const granny=L.zs.find(z=>z.k==='granny'&&z.grannyState==='healthy');
     if(granny){L.grannySaved=true;L.grannyBonus=CFG.grannySafeBonus;S.score+=L.grannyBonus;
       granny.say="YOU'RE A DEAR!";granny.sayT=3;floater(granny.x,granny.y-26,'+'+L.grannyBonus+' GRANNY SAVED!','#9dbb6c');}
-    L.banner={a:'6:00 AM - SUNRISE!',b:d.why[0],c:L.grannySaved?'GRANNY SAVED! +'+L.grannyBonus:d.why[1],t:5.5};}
+    L.banner={a:d.dawnTitle||'6:00 AM - SUNRISE!',b:d.why[0],c:L.grannySaved?'GRANNY SAVED! +'+L.grannyBonus:d.why[1],t:5.5};}
   if(L.pending&&L.pending.length)waveTick(); // new levels: the next wave arrives
+  if(d.tick){d.tick(dt);if(S.mode!=='play')return;} // a level's own rules (the metro platform's trains)
   // input
   let ix=(down('arrowright')||down('d')?1:0)-(down('arrowleft')||down('a')?1:0),iy=(down('arrowdown')||down('s')?1:0)-(down('arrowup')||down('w')?1:0);
   if(ix&&iy){ix*=.7071;iy*=.7071;}
@@ -39,7 +40,7 @@ function updPlay(dt){
   p.vx+=(ix*spd-p.vx)*Math.min(1,tr*dt);p.vy+=(iy*spd-p.vy)*Math.min(1,tr*dt);
   const mv=moveEnt(p,p.vx*dt,p.vy*dt);p.anim+=mv*.13;if(!ix&&!iy&&mv<.05)p.anim=0;
   // escape
-  if(L.open&&p.y>216){const bonus=CFG.escapeBonus*(S.level+1)*S.zombies;S.score+=bonus;L.bonus=bonus;S.stats.esc++;S.stats.reached=S.level===LEVELS.length-1?'ESC':'L'+(S.level+2);S.mode='clear';S.t=0;SFX.win();return;}
+  if(L.open&&(d.escape?d.escape(p):p.y>216)){const bonus=CFG.escapeBonus*(S.level+1)*S.zombies;S.score+=bonus;L.bonus=bonus;S.stats.esc++;S.stats.reached=S.level===LEVELS.length-1?'ESC':'L'+(S.level+2);S.mode='clear';S.t=0;SFX.win();return;}
   // items
   L.stashT-=dt;if(L.stashT<=0){L.stashT=CFG.stashEvery;if(L.items.filter(i=>i.type==='stash').length<2){const s=freeSpot(70);if(s)L.items.push({type:'stash',x:s.x,y:s.y,t:0});}}
   L.micT-=dt;if(L.micT<=0){L.micT=8;if(!p.mic&&!L.items.some(i=>i.type==='mic')){const s=freeSpot(80);if(s){L.items.push({type:'mic',x:s.x,y:s.y,t:0});L.micT=CFG.micEvery;}}}
@@ -66,7 +67,7 @@ function updPlay(dt){
   // puddles
   for(const pd of L.puddles)pd.t-=dt;L.puddles=L.puddles.filter(pd=>pd.t>0);
   // caught?
-  if(L.grace<=0&&L.vibe<=0)for(const z of L.zs){if(z.read>0||z.calm)continue;if(Math.hypot(z.x-p.x,z.y-p.y)<(z.cr||9)){caught(z);break;}}
+  if(L.grace<=0&&L.vibe<=0)for(const z of L.zs){if(z.read>0||z.calm||z.k&&FOES[z.k].harmless)continue;if(Math.hypot(z.x-p.x,z.y-p.y)<(z.cr||9)){caught(z);break;}}
 }
 function canReadMag(z){return z.k!=='granny'||z.grannyState==='infected';}
 function startRead(z){if(!canReadMag(z))return;z.read=CFG.readTime;z.readK=1+Math.floor(Math.random()*2);z.lure=null;z.say=pick(READQ);z.sayT=3.5;S.stats.mags++;if(z.k)foeRead(z);}

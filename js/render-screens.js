@@ -46,7 +46,7 @@ function drawIntro(){
   txtO('LEVEL '+(S.level+1),160,46,'#f8c840',3,'c','#140a14',1);
   txt(L.d.name,160,78,'#f2e6d0',2,'c');
   if(L.recap){txtO('YOU WERE ZOMBIFIED!',160,104,'#9dbb6c',1,'c','#140a14');txt('THE LEVEL RESTARTS. NOW THERE ARE MORE OF THEM.',160,116,'#9a8aa8',1,'c');}else if(L.d.sub)txt(L.d.sub,160,100,'#9a8aa8',1,'c');
-  const n=L.zs.filter(z=>!z.k).length,foes=L.zs.filter(z=>z.k),forest=foes.some(z=>z.k==='granny'),fy=forest?140:156,w=n*18+foes.length*24+(foes.length?6:0);
+  const n=L.zs.filter(z=>!z.k).length,foes=L.zs.filter(z=>z.k),forest=foes.some(z=>z.k==='granny'),fy=forest||L.d.tips?140:156,w=n*18+foes.length*24+(foes.length?6:0);
   for(let i=0;i<n;i++)drawHuman(ctx,160-w/2+9+i*18,fy,0,Math.floor(S.clock*4)+i,PZ,{hb:Math.floor(S.clock*3+i)%2});
   foes.forEach((z,i)=>FOES[z.k].draw(ctx,Object.assign({},z,{x:160-w/2+n*18+6+12+i*24,y:fy,dir:0,anim:0,read:0,busy:0,st:'prowl',dashT:1}),Math.floor(S.clock*3+i)%2));
   txt('FACING '+n+' ZOMBIE'+(n>1?'S':'')+foes.map(z=>' + '+(z.k==='granny'?'FRIENDLY GRANNY':FOES[z.k].name)).join(''),160,fy+10,n>=4?'#e04a3a':'#9dbb6c',1,'c');
@@ -56,6 +56,7 @@ function drawIntro(){
     txt('BITTEN? SHE THROWS SLIPPERY MUSHROOMS.',160,185,'#f0a0c8',1,'c');
     txt('KEEP HER SAFE UNTIL SUNRISE: +'+CFG.grannySafeBonus,160,196,'#9dbb6c',1,'c');
     txt('SURVIVE UNTIL 6:00 AM. THEN ESCAPE.',160,207,'#9a8aa8',1,'c');
+  }else if(L.d.tips){L.d.tips.forEach(([s,col],i)=>txt(s,160,174+i*11,col,1,'c'));
   }else{const ly=L.pending&&L.pending.length?4:0;txt('SURVIVE UNTIL 6:00 AM',160,186+ly,'#f2e6d0',1,'c');txt('ESCAPE BONUS: '+CFG.escapeBonus+' X LEVEL X ZOMBIES',160,198+ly,'#9a8aa8',1,'c');}
   if(Math.floor(S.clock*2)%2)txt(KT('PRESS ENTER','TAP TO GO'),160,220,'#f8c840',1,'c');
 }
@@ -87,7 +88,7 @@ function draw(){
     if(L.grace>0&&m==='play')txtO(L.grace>.5?'GET READY':'GO!',160,96,'#f8c840',2,'c','#140a14');
     if(L.vibe>0)txtO('VIBING '+Math.ceil(L.vibe),160,22,'#f0a0c8',1,'c','#140a14');}
   if(m==='rap')drawRap();
-  if(m==='pause')drawCenterCard('PAUSED','#f8c840',[[KT('P OR ENTER TO RESUME','TAP RESUME TO PLAY ON')],[KT('R TO RESTART FROM LEVEL '+(CFG.startLevel||1),'RESTART BEGINS AT LEVEL '+(CFG.startLevel||1)),'#9a8aa8'],[KT('Q TO QUIT TO TITLE','QUIT GOES BACK TO THE TITLE'),'#9a8aa8'],[KT('M SOUND ','SOUND ')+(muted?'OFF':'ON'),'#9a8aa8']],'');
+  if(m==='pause')drawCenterCard('PAUSED','#f8c840',[[KT('P OR ENTER TO RESUME','TAP RESUME TO PLAY ON')],[KT('R TO RESTART FROM LEVEL '+(URL_LEVEL||CFG.startLevel||1),'RESTART BEGINS AT LEVEL '+(URL_LEVEL||CFG.startLevel||1)),'#9a8aa8'],[KT('Q TO QUIT TO TITLE','QUIT GOES BACK TO THE TITLE'),'#9a8aa8'],[KT('M SOUND ','SOUND ')+(muted?'OFF':'ON'),'#9a8aa8']],'');
   if(m==='caught'){const cc=L.catcher?FOEQ[L.catcher].card:['ZOMBIFIED!','YOU PUKED. YOU TURNED. YOU RESTART.'];if(S.t>1.3)drawCenterCard(cc[0],'#9dbb6c',[[cc[1]],['NEXT ROUND: '+Math.min(S.zombies+1,MAXZ+1)+' ZOMBIES',S.zombies+1>MAXZ?'#e04a3a':'#9a8aa8']],'');}
   if(m==='clear'){const lines=[[L.d.why[0]],[L.d.why[1],'#9a8aa8'],['ESCAPE BONUS +'+L.bonus,'#9dbb6c'],[CFG.escapeBonus+' X LEVEL '+(S.level+1)+' X '+S.zombies+' ZOMBIE'+(S.zombies>1?'S':''),'#9a8aa8']];
     if(L.grannySaved)lines.push(['GRANNY SAFE AT SUNRISE +'+L.grannyBonus,'#f8c840']);
