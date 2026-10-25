@@ -20,10 +20,12 @@ The files in `js/` are classic scripts that share globals. That is on purpose: i
 | `level-cabin.js`, `level-clearing.js`, `level-forest.js`, `level-kontula.js` | One file per level: collision map, painting, animated parts |
 | `enemies.js` | Level guests (bear, mushroom granny, spurgu, nisti): kinds in `FOES`, moves, sprites, granny infection and throwing |
 | `levels.js` | `buildGeo()` builds all levels at boot; `LEVELS` lists their settings |
+| `metro.js` | Metro route generation, track switching, braking, collisions, combos, checkpoint and finish |
 | `state.js` | `S` (whole game) and `L` (current level) state, `setupLevel()` |
 | `physics.js` | Tile collision, line of sight, BFS flow field for zombie pathfinding |
 | `update.js` | Per-frame logic: player, zombies, puke, items, magazines, mushrooms, rescue bonus, rap, getting caught |
 | `render-world.js` | Play screen: layers, entities, mushroom projectiles, picker status, lighting, HUD, rap panel |
+| `render-metro.js` | Metro tunnel, tracks, train, objects, driving HUD and intro |
 | `render-screens.js` | Title, intro, initials entry, Hall of Fame, end screens; `draw()` |
 | `share.js` | Share card image + copy buttons |
 | `input.js` | Keyboard handling and screen flow (`S.mode`) |
@@ -35,6 +37,8 @@ The files in `js/` are classic scripts that share globals. That is on purpose: i
 ## Common changes
 
 **Balance the game.** Edit `js/config.js`. Night length per level is `night` in `LEVELS` (`js/levels.js`).
+
+**Metro finale.** New games and restarts begin at the cabin, then reach the metro after Kontula. `kind:'metro'` selects `setupMetro()`, `updateMetro()` and the dedicated renderer instead of walking physics. The existing `intro`, `play`, `pause`, `gameover`, `clear` and `victory` modes still handle the screen flow. Touch braking holds `tkeys[' ']` and releases it on pointer release, cancellation, lost capture or pause. The route uses a fixed seed so retries are learnable, leaves a clear track at every obstacle row, and automatically checkpoints the station. Tune the `metro*` values in `config.js`; the music sequencer's `metro` mode is a separate 136 BPM tune.
 
 **Touch controls.** Every touch button is a `<button data-k="key">`: on press it calls `tapKey(key)`, which runs the same `onKey()` / `rapKey()` path a real key press does, so game rules never live in `touch.js`. The stick sets `tkeys` (held arrow keys) that `down()` reads alongside the keyboard. Menu buttons per screen are in `menuFor()`, keyboard layouts in `KB`. On-screen text that names a key goes through `KT('KEYBOARD TEXT','TOUCH TEXT')`, which picks the wording for the input used last.
 
@@ -75,7 +79,7 @@ Tile positions in `start` and `zs` are in tiles, for example `[9.5, 11.6]`. The 
 
 **Live overlays.** `actionRects()` identifies characters, projectiles, aiming markers and nearby hazards. `speechState` retains one speaker and fixes the bubble side and full box size for that utterance; `speechLayout()` follows the speaker with screen-edge clamping. Long dialogue cycles through two-line pages without resizing. `noticeLayout()` keeps status notices below the HUD. Both layouts use world coordinates, and `overlayOpacity()` smoothly fades their backgrounds from 86% to 22% opacity when action overlaps, while keeping text slightly stronger. Rendering restores canvas opacity after each message.
 
-Run the picker gameplay checks with `node --test tests/mushroom-picker.test.cjs`. They exercise harmless contact, infection, mushroom dodging and slipping, distractions, and the once-only sunrise bonus using the real game logic.
+Run the gameplay checks with `node --test tests/*.test.cjs`. They exercise the picker encounter and metro driving against the real game logic, including collisions, scoring, pause, retries and finishing.
 
 Everything is global, so you can poke the game from the browser console during play:
 

@@ -13,6 +13,9 @@ function buildGeo(){
     lightsAt:fl=>[[232,84,66+fl],[60,48,30]],warmAt:()=>[[232,88,48]],ok:reach(g3.solid,9,11)});
   const s4=L4MAP.map(r=>[...r].map(ch=>ch!=='.')),n4=paintL4(N4),d4=paintL4(D4);
   GEO.push({solid:s4,doors:[[9,13],[10,13]],bgN:n4.bg,fgN:n4.fg,bgD:d4.bg,fgD:d4.fg,dyn:dynL4,dark:.42,lights:'l4',lightsAt:lightsL4,warmAt:warmL4,ok:reach(s4,10,10)});
+  // The metro uses a scrolling track scene rather than the walking levels' collision map.
+  const s5=Array.from({length:ROWS},()=>Array(COLS).fill(false));
+  GEO.push({solid:s5,doors:[],ok:s5.map(row=>row.map(()=>true)),dark:0});
 }
 const LEVELS=[
   {name:'THE CABIN',night:70,cp:[280,92],start:[9.5,11.6],zs:[[3.5,7.6],[17.5,4.6],[11.5,4.6],[17.5,9.6],[5.5,5.6]],why:['THE DOOR WAS NEVER LOCKED.','IT WAS JUST TOO DARK TO FIND THE HANDLE.']},
@@ -20,5 +23,7 @@ const LEVELS=[
   {name:'THE DEEP FOREST',sub:'SOMEWHERE IN FINLAND. MIND THE BEAR.',night:110,cp:[84,140],start:[9.5,11.6],zs:[[8.5,2.6],[17.5,7.6],[11.5,6.6],[2.5,9.6],[16.5,10.6]],
    waves:[['granny','Z'],['Z'],['bear'],['Z'],['Z'],['Z']],waveEvery:15,guestAt:{granny:[2.5,7.6],bear:[17.5,3.6]},why:['MOSQUITOES GUARDED THE PATH ALL NIGHT.','AT 6:00 AM THEIR SHIFT ENDED.']},
   {name:'KONTULA',sub:'ITÄ-HELSINKI. THE LAST METRO IS GONE.',night:130,cp:[56,60],start:[10,10.6],zs:[[7.5,5.6],[12.5,5.6],[17.5,7.6],[2.5,7.6],[14.5,10.6]],
-   waves:[['Z','spurgu'],['Z'],['Z'],['nisti'],['Z'],['Z']],waveEvery:16,guestAt:{spurgu:[15.5,4.6],nisti:[5.5,4.6]},why:['THE METRO SHUTTER ROLLED UP AT 6:00 AM.','KONTULA SAYS: COME BACK FOR THE KEBAB.']}
+   waves:[['Z','spurgu'],['Z'],['Z'],['nisti'],['Z'],['Z']],waveEvery:16,guestAt:{spurgu:[15.5,4.6],nisti:[5.5,4.6]},why:['THE METRO SHUTTER ROLLED UP AT 6:00 AM.','KONTULA SAYS: COME BACK FOR THE KEBAB.']},
+  {name:'THE LAST METRO',kind:'metro',sub:'KONTULA TO THE DEPOT. MIND THE GAP.',night:90,start:[10,11.6],zs:[],
+   why:['YOU FOUND THE LAST METRO.','THE DRIVER WAS OFF SICK. YOU WILL DO.']}
 ];

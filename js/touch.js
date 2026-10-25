@@ -11,7 +11,7 @@ const bthrow=$('bthrow'),brap=$('brap'),nmags=$('nmags'),bsound=$('bsound'),bpau
 function tapKey(k){audioInit();const e={key:k,repeat:false,preventDefault(){}};
   if(!shareEl.hidden){if(k==='Escape')closeShare();return;}
   if(S.mode==='rap'){rapKey(e);return;}
-  onKey(e);}
+  onKey(e);syncAudioPause();}
 
 /* 9x9 pixel icons */
 const ico=d=>'<svg viewBox="0 0 9 9" aria-hidden="true"><path d="'+d+'"/></svg>';
@@ -88,12 +88,17 @@ for(const t of ['pointerup','pointercancel','lostpointercapture'])stickEl.addEve
 const held=new Map();
 addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')TOUCH=true;audioInit();
   const b=e.target.closest&&e.target.closest('#app [data-k]');if(!b||b.dataset.up)return;
-  e.preventDefault();b.classList.add('hit');held.set(e.pointerId,b);tapKey(b.dataset.k);},true);
-const unhold=e=>{const b=held.get(e.pointerId);if(b){b.classList.remove('hit');held.delete(e.pointerId);}};
+  e.preventDefault();b.classList.add('hit');held.set(e.pointerId,b);
+  if(L&&L.metro&&S.mode==='play'&&b===bthrow){tkeys[' ']=true;try{b.setPointerCapture(e.pointerId);}catch(_){}}
+  tapKey(b.dataset.k);},true);
+const unhold=e=>{const b=held.get(e.pointerId);if(b){b.classList.remove('hit');held.delete(e.pointerId);
+  if(b===bthrow)tkeys[' ']=[...held.values()].some(button=>button===bthrow);}};
+function releaseBrake(){tkeys[' ']=false;for(const [id,b] of held)if(b===bthrow){b.classList.remove('hit');held.delete(id);}}
 addEventListener('pointerup',unhold,true);addEventListener('pointercancel',unhold,true);
+addEventListener('lostpointercapture',unhold,true);
 addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#app [data-k][data-up]');if(b&&!b.classList.contains('wait'))tapKey(b.dataset.k);});
 addEventListener('mousedown',e=>{if(e.target.closest&&e.target.closest('#app button'))e.preventDefault();}); // keep keyboard focus on the game
-bsound.addEventListener('click',()=>{audioInit();muted=!muted;});
+bsound.addEventListener('click',()=>{audioInit();muted=!muted;syncAudioPause();});
 bfull.hidden=!(document.fullscreenEnabled||document.webkitFullscreenEnabled);
 bfull.addEventListener('click',()=>{const d=document,el=d.documentElement;
   try{if(apiFS())(d.exitFullscreen||d.webkitExitFullscreen).call(d);
@@ -115,7 +120,7 @@ function menuFor(m){const last=S.level>=LEVELS.length-1;
     case 'intro':return {rows:[[['GO!','Enter','go']]]};
     case 'pause':return {rows:[[['RESUME','Enter','go']],[['RESTART','r'],['QUIT','q']]]};
     case 'clear':return {rows:[[[last?'CONTINUE':'NEXT LEVEL','Enter','go']]]};
-    case 'gameover':if(S.cp>=0)return {rows:[[['CONTINUE','Enter','go']],[['GIVE UP','q']]]};return {rows:[[['CONTINUE','Enter','go']]]};
+    case 'gameover':if(S.cp>=0)return {rows:[[[L&&L.metro?'RETRY METRO':'CONTINUE','Enter','go']],[['GIVE UP','q']]]};return {rows:[[['CONTINUE','Enter','go']]]};
     case 'victory':return {rows:[[['CONTINUE','Enter','go']]]};
     case 'scores':return {rows:[[['TITLE','Enter','go']],[['SHARE CARD','s']]]};
   }return {rows:[]};}
@@ -163,17 +168,22 @@ function drawEntryPrompt(){const e=S.entry;if(!e)return;const c=pctx,sc=pad(S.sc
 
 /* ---- per frame: match the panel to the current screen ---- */
 const READY={intro:.4,clear:.8,gameover:1.2,victory:1.2,scores:.5}; // same waits as onKey() before Enter works
-let deckMode=null,lastMags=-1,lastMic=null,lastMute=null,lastNext,nextEl=null;
+let deckMode=null,lastDrive=false,lastMags=-1,lastMic=null,lastMute=null,lastNext,nextEl=null;
 function applyDeck(m){deckMode=m;const d=m==='play'||m==='caught'?'play':m==='rap'||m==='entry'?'kb':'menu';
   document.body.dataset.deck=d;document.body.dataset.mode=m;
+  const drive=!!(L&&L.metro&&!['title','entry','scores'].includes(m));lastDrive=drive;
+  if(drive)document.body.dataset.drive='metro';else delete document.body.dataset.drive;
+  releaseBrake();brap.hidden=nmags.hidden=drive;bthrow.firstChild.nodeValue=drive?'BRAKE':'THROW';
+  bthrow.setAttribute('aria-label',drive?'Hold to brake':'Throw a magazine');bthrow.classList.remove('empty');
+  stickEl.querySelector('.lbl').textContent=drive?'LEFT / RIGHT':'DRAG TO MOVE';
   if(d!=='play')releaseStick();
   if(d==='menu')buildMenu(m);
   if(d==='kb')buildKeys(m);
   bpause.innerHTML=m==='pause'?IC.right:IC.pause;bpause.setAttribute('aria-label',m==='pause'?'Resume':'Pause');
   lastMags=-1;lastMic=null;lastNext=undefined;nextEl=null;
   layoutMobile();}
-function syncTouch(){const m=S.mode;if(m!==deckMode)applyDeck(m);
-  if(L&&(m==='play'||m==='caught')){const p=L.p;
+function syncTouch(){const m=S.mode,drive=!!(L&&L.metro&&!['title','entry','scores'].includes(m));if(m!==deckMode||drive!==lastDrive)applyDeck(m);
+  if(L&&!drive&&(m==='play'||m==='caught')){const p=L.p;
     if(p.mags!==lastMags){lastMags=p.mags;nmags.textContent='X'+p.mags;bthrow.classList.toggle('empty',!p.mags);}
     if(p.mic!==lastMic){lastMic=p.mic;brap.classList.toggle('live',!!p.mic);}}
   if(muted!==lastMute){lastMute=muted;bsound.innerHTML=muted?IC.mute:IC.sound;bsound.setAttribute('aria-label',muted?'Sound is off':'Sound is on');}
@@ -186,11 +196,11 @@ function syncTouch(){const m=S.mode;if(m!==deckMode)applyDeck(m);
 /* ---- phone housekeeping ---- */
 const buzz=p=>{if(TOUCH&&!muted&&navigator.vibrate)try{navigator.vibrate(p);}catch(_){}};
 for(const [k,p] of [['caught',[70,50,140]],['slip',30]]){const f=SFX[k];SFX[k]=function(){buzz(p);return f.apply(SFX,arguments);};}
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)return;for(const k in keys)keys[k]=false;releaseStick();if(S.mode==='play')S.mode='pause';syncAudioPause();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){for(const k in keys)keys[k]=false;releaseStick();releaseBrake();if(S.mode==='play')S.mode='pause';}syncAudioPause();});
 for(const t of ['gesturestart','gesturechange','dblclick'])document.addEventListener(t,e=>e.preventDefault());
 document.addEventListener('contextmenu',e=>{if(!(e.target.closest&&e.target.closest('#share')))e.preventDefault();});
 app.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
-for(const t of ['touchend','click'])addEventListener(t,()=>audioInit(),true); // iOS unlocks audio on touch end
+for(const t of ['touchend','pointerup','click'])addEventListener(t,()=>audioInit(),true); // unlock on release, including controls that prevent a click
 if(window.visualViewport)visualViewport.addEventListener('resize',()=>layoutMobile());
 if(desktopPointer)desktopPointer.addEventListener('change',layoutMobile);
 addEventListener('orientationchange',()=>setTimeout(layoutMobile,150));

@@ -3,13 +3,13 @@
 function update(dt){
   S.t+=dt;
   const m=S.mode;
-  music(m==='title'||m==='entry'||m==='scores'?'title':m==='rap'?'rap':(m==='play'||m==='intro'||m==='pause')?'night':null);
+  music(m==='title'||m==='entry'||m==='scores'?'title':m==='rap'?'rap':(m==='play'||m==='intro'||m==='pause')?(L&&L.metro?'metro':'night'):null);
   if(m==='title'){S.pageT+=dt;if(S.pageT>7){S.pageT=0;S.page=(S.page+1)%3;}return;}
-  if(m==='intro'){if(S.t>(L.zs.some(z=>z.k==='granny')?CFG.grannyIntroTime:3.2)){S.mode='play';S.t=0;}return;}
-  if(m==='play')updPlay(dt);
+  if(m==='intro'){if(S.t>(L.metro?5.5:L.zs.some(z=>z.k==='granny')?CFG.grannyIntroTime:3.2)){S.mode='play';S.t=0;}return;}
+  if(m==='play'){if(L.metro)updateMetro(dt);else updPlay(dt);}
   else if(m==='rap')updRap(dt);
   else if(m==='caught')updCaught(dt);
-  if(L&&(m==='play'||m==='rap'||m==='caught'||m==='clear')){updFx(dt);}
+  if(L&&!L.metro&&(m==='play'||m==='rap'||m==='caught'||m==='clear')){updFx(dt);}
 }
 function updFx(dt){
   for(const p of L.parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.vz-=(p.g==null?240:p.g)*dt;p.t-=dt;}

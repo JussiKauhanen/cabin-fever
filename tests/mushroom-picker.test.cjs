@@ -5,7 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 // Run the real game logic without a browser, rendering, saved scores, or audio.
-const sources = ['core', 'config', 'content', 'enemies', 'levels', 'state', 'physics', 'update', 'input']
+const sources = ['core', 'config', 'content', 'enemies', 'levels', 'metro', 'state', 'physics', 'update', 'input']
   .map(name => [name, fs.readFileSync(path.join(__dirname, '..', 'js', name + '.js'), 'utf8')]);
 function game() {
   const canvas = {getContext: () => ({}), addEventListener() {}};

@@ -1,12 +1,21 @@
 "use strict";
 /* WebAudio chiptune: sound effects (SFX) and the step sequencer for music. */
-let AC=null,MG=null,NB=null,muted=false,audioPaused=false;
-function audioInit(){if(AC){if(AC.state==='suspended'&&S.mode!=='pause')AC.resume();return;}try{AC=new (window.AudioContext||window.webkitAudioContext)();MG=AC.createGain();MG.gain.value=.3;MG.connect(AC.destination);
-  NB=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);const d=NB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;}catch(e){AC=null;}}
+let AC=null,MG=null,NB=null,muted=false,audioPaused=false,audioUnlocked=false;
+function audioInit(){if(!AC){
+  // Use media volume on iOS, where the default ambient session follows the silent switch.
+  try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(_){}
+  try{AC=new (window.AudioContext||window.webkitAudioContext)();MG=AC.createGain();MG.gain.value=muted?0:.3;MG.connect(AC.destination);
+    NB=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);const d=NB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;}catch(e){AC=null;}}
+  resumeAudio();}
+function resumeAudio(){if(!AC||AC.state==='closed'||S.mode==='pause'||document.hidden)return;
+  // Start a silent buffer in the gesture itself: older iOS versions need this as well as resume().
+  if(!audioUnlocked){const s=AC.createBufferSource();s.buffer=AC.createBuffer(1,1,AC.sampleRate);s.connect(MG);
+    s.onended=()=>{audioUnlocked=true;s.disconnect();};s.start(0);}
+  if(AC.state==='suspended'||AC.state==='interrupted')AC.resume().catch(()=>{});}
 const anow=()=>AC?AC.currentTime:0;
-function tn(f,d,type,v,f2,at){if(!AC||muted)return;const t=at||AC.currentTime;const o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);
+function tn(f,d,type,v,f2,at){if(!AC||AC.state!=='running'||muted)return;const t=at||AC.currentTime;const o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);
   g.gain.setValueAtTime(v||.1,t);g.gain.exponentialRampToValueAtTime(.0008,t+d);o.connect(g);g.connect(MG);o.start(t);o.stop(t+d+.03);}
-function nz(d,v,freq,at,ft){if(!AC||muted)return;const t=at||AC.currentTime;const s=AC.createBufferSource();s.buffer=NB;const fl=AC.createBiquadFilter();fl.type=ft||'lowpass';fl.frequency.value=freq||1200;const g=AC.createGain();
+function nz(d,v,freq,at,ft){if(!AC||AC.state!=='running'||muted)return;const t=at||AC.currentTime;const s=AC.createBufferSource();s.buffer=NB;const fl=AC.createBiquadFilter();fl.type=ft||'lowpass';fl.frequency.value=freq||1200;const g=AC.createGain();
   g.gain.setValueAtTime(v||.1,t);g.gain.exponentialRampToValueAtTime(.0008,t+d);s.connect(fl);fl.connect(g);g.connect(MG);s.start(t,Math.random()*.5);s.stop(t+d+.03);}
 const NOTE=n=>440*Math.pow(2,(n-69)/12);
 const SFX={
@@ -26,15 +35,18 @@ const SFX={
   grumble(){tn(90+Math.random()*30,.25,'sawtooth',.035,60);},
   growl(){nz(.55,.16,320);tn(85,.55,'sawtooth',.08,48);},          // bear winding up a charge
   spill(){nz(.3,.1,900,0,'bandpass');tn(320,.22,'triangle',.04,120);}, // spurgu spills his beer
-  flag(){[392,523,659,784,1046].forEach((f,i)=>tn(f,.12,'square',.06,null,anow()+i*.07));}  // checkpoint found
+  flag(){[392,523,659,784,1046].forEach((f,i)=>tn(f,.12,'square',.06,null,anow()+i*.07));}, // checkpoint found
+  metroHit(){tn(120,.07,'triangle',.12,55);nz(.06,.06,850);tn(660,.05,'square',.035,null,anow()+.025);},
+  metroCrash(){nz(.3,.22,950);tn(145,.32,'sawtooth',.09,35);},
+  metroBrake(){nz(.1,.025,2800,0,'highpass');tn(320,.1,'triangle',.025,150);}
 };
 const seq={next:0,step:0,mode:null};
 function music(m){if(seq.mode!==m){seq.mode=m;seq.step=0;seq.next=anow()+.05;}}
-function syncAudioPause(){if(!AC)return;const paused=S.mode==='pause';MG.gain.value=muted?0:.3;
+function syncAudioPause(){if(!AC)return;const paused=S.mode==='pause'||document.hidden;MG.gain.value=muted?0:.3;
   if(paused===audioPaused)return;audioPaused=paused;
   // Freezing the audio clock also holds queued notes, so resuming continues the same phrase.
-  (paused?AC.suspend():AC.resume()).catch(()=>{});}
-function seqTick(){syncAudioPause();if(!AC||audioPaused||!seq.mode)return;const bpm=seq.mode==='rap'?96:seq.mode==='title'?112:84;const sd=60/bpm/4;
+  if(paused)AC.suspend().catch(()=>{});else resumeAudio();}
+function seqTick(){syncAudioPause();if(!AC||AC.state!=='running'||audioPaused||!seq.mode)return;const bpm=seq.mode==='metro'?136:seq.mode==='rap'?96:seq.mode==='title'?112:84;const sd=60/bpm/4;
   if(seq.next<AC.currentTime-.3)seq.next=AC.currentTime+.02;
   while(seq.next<AC.currentTime+.12){if(!muted)playStep(seq.mode,seq.step,seq.next);seq.next+=sd;seq.step++;}}
 function playStep(m,s,t){
@@ -46,4 +58,15 @@ function playStep(m,s,t){
     const bass=[40,0,0,40,0,0,43,0,45,0,43,0,40,0,38,0][i];if(bass)tn(NOTE(bass),.2,'square',.06,null,t);if(i===14&&bar)tn(NOTE(76),.08,'square',.03,null,t);}
   else if(m==='title'){const bar=(s>>4)&3;const roots=[45,48,43,40];const arp=[0,7,12,15,12,7,3,7];tn(NOTE(roots[bar]+24+arp[i%8]),.1,'square',.03,null,t);
     if(i%4===0)tn(NOTE(roots[bar]),.22,'triangle',.11,null,t);if(i%8===4)nz(.08,.07,2000,t,'bandpass');if(i%2===0)nz(.02,.025,8000,t,'highpass');}
+  else if(m==='metro'){
+    // Four driving bars: rail-like hats, octave bass pulses and an answering arcade hook.
+    const bar=(s>>4)&3,root=[40,43,45,38][bar];
+    if(i%4===0)tn(140,.15,'sine',.28,42,t);
+    if(i===4||i===12){nz(.1,.1,2000,t,'bandpass');tn(180,.055,'triangle',.045,90,t);}
+    nz(i===15?.055:.025,i%2?.014:.023,6500,t,'highpass');
+    if(i%2===0){const bass=root+([0,0,12,0,7,0,12,7][i>>1]);tn(NOTE(bass),.15,'triangle',.1,null,t);
+      const hook=bar%2?[12,10,7,5,7,3,2,7]:[0,7,10,12,7,3,5,7];
+      tn(NOTE(root+24+hook[i>>1]),.13,'square',.029,null,t);}
+    if(i===15&&bar===3)tn(NOTE(74),.06,'square',.025,null,t);
+  }
 }

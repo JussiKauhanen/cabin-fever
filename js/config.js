@@ -1,6 +1,11 @@
 "use strict";
 /* Tunables. Change numbers here; nothing else needs to move. Times are seconds, speeds px/second. */
 const CFG={
+  startLevel:1,             // new games and restarts begin at the cabin
+  metroLength:5200, metroTimeLimit:90, // reach the depot before time runs out
+  metroHealth:3, metroSpeed:96, metroBrakeSpeed:42,
+  metroLaneTime:.18, metroRowGap:115,
+  metroZombiePoints:100, metroFinishBonus:5000, metroHealthBonus:500,
   playerSpeed:64,           // normal walking speed
   zombieSpeed:38,           // base zombie speed (each extra zombie gets +1.5)
   zombieSpeedupAtDawn:.25,  // zombies get up to 25% faster as night ends
