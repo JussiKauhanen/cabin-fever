@@ -4,6 +4,10 @@ As the epic trip to Vierumäki was postponed due to norovirus, made this game in
 
 An 8-bit top-down survival game. A puking zombie with strong opinions chases you around a cabin. Survive until 6:00 AM, then escape. Five levels.
 
+**[▶ Play it in your browser](https://jussikauhanen.github.io/cabin-fever/)** (keyboard or touch, no install)
+
+[![Cabin Fever title screen](screenshots/title.png)](https://jussikauhanen.github.io/cabin-fever/)
+
 ## Levels
 
 | # | Level | Night | Who chases you |
@@ -34,7 +38,7 @@ Magazines and raps distract the hostile characters. The bear eats the magazine i
 
 ## Play
 
-- **Online:** GitHub Pages (Settings → Pages → deploy from `main`, root folder).
+- **Online:** [jussikauhanen.github.io/cabin-fever](https://jussikauhanen.github.io/cabin-fever/), served by GitHub Pages from `main` (root folder).
 - **Locally:** open `index.html` in a browser. No build step, no server needed.
 
 ## Controls
@@ -65,6 +69,7 @@ During play, checkpoint and status notices stay in a compact strip below the HUD
 index.html      page + script load order
 css/style.css   page and touch control styles (the game itself draws on a canvas)
 js/             game code, one topic per file
+screenshots/    images for this README (not used by the game)
 ```
 
 Want to change or add something? See [EXTENDING.md](EXTENDING.md).
