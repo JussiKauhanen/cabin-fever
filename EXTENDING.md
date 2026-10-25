@@ -17,8 +17,9 @@ The files in `js/` are classic scripts that share globals. That is on purpose: i
 | `sprites.js` | `drawHuman()` for player and zombie, palettes `PP` / `PZ`, HUD icons |
 | `audio.js` | `SFX.*` sound effects and the music sequencer (`playStep`) |
 | `scores.js` | High score table in `localStorage` |
-| `level-cabin.js`, `level-clearing.js`, `level-forest.js`, `level-kontula.js` | One file per level: collision map, painting, animated parts |
-| `enemies.js` | Level guests (bear, mushroom granny, spurgu, nisti): kinds in `FOES`, moves, sprites, granny infection and throwing |
+| `level-cabin.js`, `level-clearing.js`, `level-forest.js`, `level-kontula.js`, `level-station.js` | One file per level: collision map, painting, animated parts (the station also draws its trains) |
+| `enemies.js` | Level guests (bear, mushroom granny, spurgu, nisti, ticket inspector): kinds in `FOES`, moves, sprites, granny infection and throwing |
+| `station.js` | Metro platform rules: train schedule and hits, zombies returning from the tunnel, announcer, the first train's doors as the exit |
 | `levels.js` | `buildGeo()` builds all levels at boot; `LEVELS` lists their settings |
 | `state.js` | `S` (whole game) and `L` (current level) state, `setupLevel()` |
 | `physics.js` | Tile collision, line of sight, BFS flow field for zombie pathfinding |
@@ -55,11 +56,12 @@ The files in `js/` are classic scripts that share globals. That is on purpose: i
 2. **Register it in `buildGeo()`** in `js/levels.js`. Copy an existing `GEO.push({...})`. `bgD` / `fgD` are optional daytime versions that cross-fade in at dawn. `dark` is how dark the night gets.
 3. **Add a `LEVELS` entry** in the same position: `name`, `night` (seconds), `start` (player tile), five `zs` zombie spawn tiles, and the two `why` lines shown when you escape. Optional: `sub` (a line under the name on the intro screen), `cp:[x,y]` (pixel spot of the hidden checkpoint flag; put it right behind something on the `fg` layer) and waves: `waves` lists who arrives in each slot (`'Z'` = the next zombie, filled only if the zombie count is high enough, or a guest kind), `waveEvery` is the slot length in seconds and `guestAt` gives each guest's spawn tile. Without `waves`, all `S.zombies` zombies start on the map.
 4. **Add its `<script>` tag** to `index.html`, before `levels.js`.
-5. **Lights:** give the `GEO` entry `lightsAt(flicker)` (a list of `[x, y, radius]` that cut through the dark) and `warmAt()` (orange glows). Levels 1–2 still use the older `g.lights` branch in `drawWorld()`. `smoke:[x,y]` adds rising smoke.
+5. **Level rules (optional).** A `LEVELS` entry can hook in its own logic: `setup()` runs in `setupLevel()`, `tick(dt)` runs every play frame (stop if it changes `S.mode`), `escape(p)` replaces the bottom-door exit check, `music` picks a sequencer mode, `dawnTitle` replaces the sunrise banner and `tips` (a list of `[text, colour]`) replaces the intro screen's goal lines. The metro platform (`station.js`) uses all of them.
+6. **Lights:** give the `GEO` entry `lightsAt(flicker)` (a list of `[x, y, radius]` that cut through the dark) and `warmAt()` (orange glows). Levels 1–2 still use the older `g.lights` branch in `drawWorld()`. `smoke:[x,y]` adds rising smoke.
 
 ## Adding a level guest
 
-Guests live in `L.zs` next to the zombies with `k` set to their kind, so magazines, raps and getting caught work without extra code. In `js/enemies.js`, add a kind to `FOES`: `name` (intro screen), `spd`, `read` (how long a magazine holds them, x `CFG.readTime`), `act(z,dt)` (their own move; return `true` to stand still this frame), optional `move(z,sx,sy)` (bend the chase direction or speed), `draw(c,z,headbob)` and `voice()`. Add their lines to `FOEQ` in `js/content.js` (`say`, `read`, `vibe`, `caught`, `card`). Then add them to a level's `waves` and `guestAt`. Set `z.calm=true` while a guest should not catch you, and `noDawn:true` on a kind that should not speed up at dawn.
+Guests live in `L.zs` next to the zombies with `k` set to their kind, so magazines, raps and getting caught work without extra code. In `js/enemies.js`, add a kind to `FOES`: `name` (intro screen), `spd`, `read` (how long a magazine holds them, x `CFG.readTime`), `act(z,dt)` (their own move; return `true` to stand still this frame), optional `move(z,sx,sy)` (bend the chase direction or speed), `draw(c,z,headbob)` and `voice()`. Add their lines to `FOEQ` in `js/content.js` (`say`, `read`, `vibe`, `caught`, `card`). Then add them to a level's `waves` and `guestAt`. Set `z.calm=true` while a guest should not catch you, `harmless:true` on a kind that never catches you, and `noDawn:true` on a kind that should not speed up at dawn.
 
 Tile positions in `start` and `zs` are in tiles, for example `[9.5, 11.6]`. The second number is the feet position, so keep it at about `.6` inside a free tile.
 
@@ -75,7 +77,7 @@ Tile positions in `start` and `zs` are in tiles, for example `[9.5, 11.6]`. The 
 
 **Live overlays.** `actionRects()` identifies characters, projectiles, aiming markers and nearby hazards. `speechState` retains one speaker and fixes the bubble side and full box size for that utterance; `speechLayout()` follows the speaker with screen-edge clamping. Long dialogue cycles through two-line pages without resizing. `noticeLayout()` keeps status notices below the HUD. Both layouts use world coordinates, and `overlayOpacity()` smoothly fades their backgrounds from 86% to 22% opacity when action overlaps, while keeping text slightly stronger. Rendering restores canvas opacity after each message.
 
-Run the gameplay checks with `node --test tests/*.test.cjs`. They exercise the picker encounter and audio pause/unlock handling against the real game code.
+Run the gameplay checks with `node --test tests/*.test.cjs`. They exercise the picker encounter, the metro platform (trains, inspector, first-train exit) and audio pause/unlock handling against the real game code.
 
 Everything is global, so you can poke the game from the browser console during play:
 

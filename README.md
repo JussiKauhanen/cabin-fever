@@ -2,7 +2,7 @@
 
 As the epic trip to Vierumäki was postponed due to norovirus, made this game instead :)
 
-An 8-bit top-down survival game. A puking zombie with strong opinions chases you around a cabin. Survive until 6:00 AM, then escape. Four levels.
+An 8-bit top-down survival game. A puking zombie with strong opinions chases you around a cabin. Survive until 6:00 AM, then escape. Five levels.
 
 ## Levels
 
@@ -12,17 +12,23 @@ An 8-bit top-down survival game. A puking zombie with strong opinions chases you
 | 2 | The clearing | 90 s | Zombies |
 | 3 | The deep forest, somewhere in Finland | 110 s | A harmless **mushroom granny** picks mushrooms while zombies and the **bear** arrive. Protect her: a zombie bite turns her into a mushroom-throwing zombie. |
 | 4 | Kontula, East Helsinki | 130 s | Arriving through the night: a zombie and the **spurgu**, then two zombies, then the **nisti**, then the rest of the zombies |
+| 5 | Kontula metro, on the platform | 140 s | Zombies and the **ticket inspector** arrive while trains rush through. At 6:00 AM, board the first train. |
 
-The night (12:00 to 6:00 AM) passes fastest on level 1 and a little slower on each level after it. On levels 3 and 4 a new arrival comes every 15–16 seconds; a zombie slot only fills if your zombie count has that many zombies, so the fewer times you have been caught, the emptier the night.
+The night (12:00 to 6:00 AM) passes fastest on level 1 and a little slower on each level after it. On levels 3 to 5 a new arrival comes every 15–16 seconds; a zombie slot only fills if your zombie count has that many zombies, so the fewer times you have been caught, the emptier the night.
 
 - **Bear:** growls, then charges in a straight line and needs a breather.
 - **Mushroom granny:** starts harmless, wandering and picking chanterelles. Keep zombies away from her. A bite starts a visible transformation countdown; once turned, she chases you and warns before throwing mushrooms that make you slip. Dodged mushrooms land at the marked spot and break into small slippery pieces, which disappear after three seconds. Keep her unbitten until sunrise for a bonus (`grannySafeBonus` in `js/config.js`).
 - **Spurgu:** very slow; wobbles, naps on the spot (harmless while asleep) and spills slippery beer.
 - **Nisti:** really fast, faster than you while dashing, but twitches in place between dashes and drifts off now and then.
+- **Ticket inspector:** never catches you, but fines you on contact: two magazines, or 100 points if you have none. Between fines he checks the zombies' tickets, which stops them for a moment.
+
+### The metro platform
+
+Every 8–12 seconds the bell rings and the edge lights flash amber: a train is coming on that track (track 1 runs right, track 2 runs left). Anything on the rails gets hit. Zombies are knocked into the tunnel for 200 points and climb back out at a far platform end ten seconds later. The inspector is only grazed: he lands on the platform, dizzy for a few seconds. If it hits you, you count as caught. Throw a magazine onto the rails to lure zombies there. The announcer chimes in now and then. At 6:00 AM the first train pulls into track 2 and opens its doors; walk into a door from the lower platform to escape. The level has its own fast arcade-action tune. Tune the `train*`, `inspector*` and `announceEvery` values in `js/config.js`.
 
 ### Checkpoints
 
-Every level hides a checkpoint flag behind something tall (a bookshelf, a tree, a birch). Walk behind it to pick the flag up; a faint twinkle gives the spot away. If you then lose every life, the game over screen lets you retry the level of the last flag you found, with fresh lives and the score you had when you started that level, or give up and save your score. A used flag is back in its hiding place for the next try.
+Every level hides a checkpoint flag behind something tall (a bookshelf, a tree, a birch, a pillar). Walk behind it to pick the flag up; a faint twinkle gives the spot away. If you then lose every life, the game over screen lets you retry the level of the last flag you found, with fresh lives and the score you had when you started that level, or give up and save your score. A used flag is back in its hiding place for the next try.
 
 Magazines and raps distract the hostile characters. The bear eats the magazine instead of reading it, the infected granny reads for longer, and the nisti loses interest fast. The healthy picker ignores magazines, so use them to keep zombies busy and away from her; raps give everyone a breather.
 

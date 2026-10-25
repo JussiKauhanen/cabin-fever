@@ -14,6 +14,13 @@ const CFG={
   mushroomEvery:3.5,        // time between an infected picker's mushroom throws
   mushroomSpeed:88, mushroomLife:1.6, // thrown mushrooms cause a slip, not a lost life
   mushroomBitsLife:3,       // small slippery mushroom pieces disappear after a few seconds
+  trainFirst:7, trainEvery:[8,12], // metro platform: first train, then a random gap between trains
+  trainWarn:2.6, trainSpeed:300,   // bell and edge lights before a train, then it rushes through
+  trainReturn:10,           // a zombie hit by a train climbs back out of the tunnel after this long
+  trainHitPoints:200,
+  inspectorFine:2, inspectorFinePoints:100, inspectorCooldown:7, // mags taken per fine (points if you have none), then a break
+  inspectorDizzy:3.5,       // a train only grazes the inspector: he lands on the platform, dizzy for this long
+  announceEvery:15,         // time between platform announcements
   readTime:6,               // how long a zombie reads a magazine
   magsStart:1, magsMax:9, magsPerStash:2,
   stashEvery:10,            // a new magazine stash spawns this often (max 2 on the map)

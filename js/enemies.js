@@ -2,11 +2,13 @@
 /* Guests share L.zs with zombies (z.k = kind). The mushroom picker is harmless until a zombie bites her;
    infected guests chase you, read magazines and vibe to raps. Each kind adds one move of its own:
    bear = growls, then charges in a straight line and needs a breather; granny = gathers mushrooms, then throws them if infected;
-   spurgu = wobbles, naps (harmless while asleep) and spills slippery beer; nisti = dashes and twitches, drifts off now and then. */
+   spurgu = wobbles, naps (harmless while asleep) and spills slippery beer; nisti = dashes and twitches, drifts off now and then;
+   inspector = never catches you, but fines you (magazines, or points) and checks zombies' tickets in between. */
 const PG={o:'#24161e',skin:'#f0caa8',skinDk:'#d4a68a',hair:'#c8382e',hairLt:'#f0e2d0',shirt:'#7a5a9a',shirtDk:'#5a3e76',pants:'#3a2c3a',shoe:'#2e5a34',eye:'#24161e',cheek:'#ec9a8e'};
 const PGZ={...PG,skin:'#9dbb6c',skinDk:'#6f8f4c',eye:'#ff4a3a',cheek:'#6f8f4c',z:1};
 const PS={o:'#24161e',skin:'#e8a88a',skinDk:'#c8846c',hair:'#3a6a8a',hairLt:'#5a8aaa',shirt:'#6a6a42',shirtDk:'#4a4a2c',pants:'#3a3a4c',shoe:'#24161e',eye:'#24161e',cheek:'#e06060'};
 const PN={o:'#24161e',skin:'#dcc8bc',skinDk:'#b8a49a',hair:'#4c4c60',hairLt:'#5e5e74',shirt:'#4c4c60',shirtDk:'#38384a',pants:'#2a3a6c',shoe:'#e8e8f0',eye:'#24161e',cheek:'#a094b0'};
+const PI={o:'#24161e',skin:'#f0c0a0',skinDk:'#d09a80',hair:'#8a8a94',hairLt:'#a8a8b4',shirt:'#2a3a6a',shirtDk:'#1e2a4e',pants:'#22223a',shoe:'#14121a',eye:'#24161e',cheek:'#e09080'};
 const PB={o:'#1a100c',fur:'#6a4426',furDk:'#4a2c18',furLt:'#8a5e36',snout:'#c09060',nose:'#120a08'};
 const FOES={
   bear:{name:'BEAR',spd:30,read:.6,cr:11,bh:28,act:actBear,move:(z,sx,sy)=>z.st==='charge'?[z.cx,z.cy,3.1]:[sx,sy,1],draw:drawBear,
@@ -16,7 +18,9 @@ const FOES={
   spurgu:{name:'SPURGU',spd:18,read:1.2,act:actSpurgu,move:moveSpurgu,draw:(c,z,hb)=>drawGuest(c,z,hb,PS,accSpurgu),
     voice:()=>tn(150+Math.random()*30,.3,'sawtooth',.03,100)},
   nisti:{name:'NISTI',spd:56,read:.6,noDawn:true,act:actNisti,move:(z,sx,sy)=>[sx,sy,1.25],draw:(c,z,hb)=>drawGuest(c,z,hb,PN,accNisti),
-    voice:()=>{for(let i=0;i<3;i++)tn(300+Math.random()*200,.04,'square',.02,null,anow()+i*.05);}}
+    voice:()=>{for(let i=0;i<3;i++)tn(300+Math.random()*200,.04,'square',.02,null,anow()+i*.05);}},
+  inspector:{name:'TICKET INSPECTOR',spd:46,read:.7,harmless:true,grazed:true,act:actInspector,draw:(c,z,hb)=>drawGuest(c,z,hb,PI,accInspector),
+    voice:()=>{tn(1200,.05,'square',.02);tn(1500,.07,'square',.02,null,anow()+.07);}}
 };
 function newFoe(k,x,y){const K=FOES[k];
   const z={k,x,y,dir:0,anim:0,spd:K.spd,read:0,readK:1,bubbleT:2+Math.random()*3,say:'',sayT:0,lure:null,still:0,t:Math.random()*9,cr:K.cr||9,bh:K.bh||22,
@@ -109,6 +113,21 @@ function actNisti(z,dt){
   if(z.wander){z.wanderLeft-=dt;if(z.wanderLeft<=0||Math.hypot(z.wander.x-z.x,z.wander.y-z.y)<8)z.wander=null;}
   else{z.wanderT-=dt;if(z.wanderT<=0&&!z.lure){z.wanderT=9+Math.random()*5;const s=freeSpot(0);if(s){z.wander=s;z.wanderLeft=2.4;z.say=pick(FOEQ.nisti.wander);z.sayT=1.8;}}}
   return z.dashT<0;}
+function actInspector(z,dt){
+  if(z.dizzy>0){z.dizzy-=dt;z.dir=0;return true;}   // grazed by a train (station.js)
+  if(z.busy>0){z.busy-=dt;z.dir=0;return true;}
+  z.fineCd=Math.max(0,(z.fineCd||0)-dt);const p=L.p;
+  if(z.fineCd<=0){z.wander=null;if(Math.hypot(p.x-z.x,p.y-z.y)<11){fineInspector(z);return true;}return false;}
+  // between fines he walks over to the nearest zombie and checks its ticket, which stops it for a moment
+  let near=null,nd=1e9;for(const o of L.zs){if(o.k||o.read>0)continue;const d=Math.hypot(o.x-z.x,o.y-z.y);if(d<nd){nd=d;near=o;}}
+  z.wander=near?{x:near.x,y:near.y}:null;
+  if(near&&nd<12){near.read=CFG.readTime*.5;near.readK=1;near.lure=null;near.say=pick(FOEQ.inspector.zfine);near.sayT=2.5;
+    z.say=pick(FOEQ.inspector.check);z.sayT=1.6;z.busy=.8;floater(near.x,near.y-26,'TICKET CHECK!','#5ad8f8');SFX.fine();return true;}
+  return false;}
+function fineInspector(z){const p=L.p,n=Math.min(CFG.inspectorFine,p.mags);
+  if(n){p.mags-=n;floater(p.x,p.y-22,'FINED! -'+n+' MAG'+(n>1?'S':''),'#5ad8f8');}
+  else{const pts=Math.min(Math.floor(S.score),CFG.inspectorFinePoints);S.score-=pts;floater(p.x,p.y-22,'NO TICKET! -'+pts,'#5ad8f8');}
+  z.fineCd=CFG.inspectorCooldown;z.busy=1.2;z.say=pick(FOEQ.inspector.fine);z.sayT=2;p.slip=Math.max(p.slip,.5);SFX.fine();}
 
 /* ---- drawing ---- */
 const F=(c,x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(x,y,w,h);};
@@ -117,6 +136,7 @@ function drawGranny(c,z,hb){const green=z.grannyState==='infected'||z.grannyStat
 function drawGuest(c,z,hb,P,acc){const busy=z.busy>0,rd=z.read>0;let dx=0,dy=0;
   if(z.k==='spurgu'&&!busy&&!rd&&!hb)dx=Math.round(Math.sin(z.t*2.6)*1.4);
   if(z.k==='nisti'&&z.dashT<0&&!hb)dx=Math.floor(S.clock*30)%2?1:-1;
+  if(z.dizzy>0&&!hb)dx=Math.round(Math.sin(z.t*9)*1.5);
   if(busy)dy=z.k==='spurgu'?3:1;
   const dir=hb||rd||busy?0:z.dir,fr=hb||rd||busy?0:Math.floor(z.anim);
   drawHuman(c,z.x,z.y,dir,fr,P,{dx,dy,hb,read:rd?z.readK:0});
@@ -139,6 +159,12 @@ function accSpurgu(c,ox,oy,dir,hb){const fl=dir===3;
 function accNisti(c,ox,oy,dir){
   if(dir<2){F(c,ox+3,oy+13,1,3,'#e8e8f0');F(c,ox+8,oy+13,1,3,'#e8e8f0');}else F(c,dir===3?ox+5:ox+6,oy+13,1,3,'#e8e8f0');   // tracksuit stripes
   if(dir===0){F(c,ox+4,oy+8,1,2,'#d8d8e0');F(c,ox+7,oy+8,1,2,'#d8d8e0');}}                                                   // hoodie strings
+function accInspector(c,ox,oy,dir,hb,z){const side=dir>=2,fl=dir===3;
+  F(c,ox+1,oy-2+hb,10,4,PI.o);F(c,ox+2,oy-1+hb,8,2,'#1e2a4e');F(c,ox+5,oy-1+hb,2,1,'#f8c840');                     // cap with badge
+  if(dir===0)F(c,ox+2,oy+2+hb,8,1,'#101830');else if(side)F(c,fl?ox:ox+8,oy+2+hb,4,1,'#101830');                  // peak
+  if(dir===0){F(c,ox+3,oy+9,2,2,'#f8c840');F(c,ox+9,oy+11,3,4,PI.o);F(c,ox+10,oy+12,1,2,'#5ad8f8');}              // badge + card reader
+  else if(side)F(c,fl?ox+2:ox+7,oy+10,3,4,PI.o),F(c,fl?ox+3:ox+8,oy+11,1,2,'#5ad8f8');
+  if(z&&z.dizzy>0)for(let i=0;i<3;i++){const a=z.t*6+i*2.1;F(c,ox+5+Math.round(Math.cos(a)*7),oy-4+Math.round(Math.sin(a)*2),2,2,'#f8c840');}}   // dizzy stars
 function drawBear(c,z,hb){const pg=G;G=c;
   const rest=z.st==='rest',up=z.st==='windup',dir=hb||z.read>0||rest||up?0:z.dir,st=Math.floor(z.anim)&3,P=PB,b=hb||0;
   const X=Math.round(z.x),Y=Math.round(z.y)+(rest?1:0)-(up?2:0);
