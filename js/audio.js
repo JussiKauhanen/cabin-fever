@@ -35,10 +35,7 @@ const SFX={
   grumble(){tn(90+Math.random()*30,.25,'sawtooth',.035,60);},
   growl(){nz(.55,.16,320);tn(85,.55,'sawtooth',.08,48);},          // bear winding up a charge
   spill(){nz(.3,.1,900,0,'bandpass');tn(320,.22,'triangle',.04,120);}, // spurgu spills his beer
-  flag(){[392,523,659,784,1046].forEach((f,i)=>tn(f,.12,'square',.06,null,anow()+i*.07));}, // checkpoint found
-  metroHit(){tn(120,.07,'triangle',.12,55);nz(.06,.06,850);tn(660,.05,'square',.035,null,anow()+.025);},
-  metroCrash(){nz(.3,.22,950);tn(145,.32,'sawtooth',.09,35);},
-  metroBrake(){nz(.1,.025,2800,0,'highpass');tn(320,.1,'triangle',.025,150);}
+  flag(){[392,523,659,784,1046].forEach((f,i)=>tn(f,.12,'square',.06,null,anow()+i*.07));}  // checkpoint found
 };
 const seq={next:0,step:0,mode:null};
 function music(m){if(seq.mode!==m){seq.mode=m;seq.step=0;seq.next=anow()+.05;}}
@@ -46,7 +43,7 @@ function syncAudioPause(){if(!AC)return;const paused=S.mode==='pause'||document.
   if(paused===audioPaused)return;audioPaused=paused;
   // Freezing the audio clock also holds queued notes, so resuming continues the same phrase.
   if(paused)AC.suspend().catch(()=>{});else resumeAudio();}
-function seqTick(){syncAudioPause();if(!AC||AC.state!=='running'||audioPaused||!seq.mode)return;const bpm=seq.mode==='metro'?136:seq.mode==='rap'?96:seq.mode==='title'?112:84;const sd=60/bpm/4;
+function seqTick(){syncAudioPause();if(!AC||AC.state!=='running'||audioPaused||!seq.mode)return;const bpm=seq.mode==='rap'?96:seq.mode==='title'?112:84;const sd=60/bpm/4;
   if(seq.next<AC.currentTime-.3)seq.next=AC.currentTime+.02;
   while(seq.next<AC.currentTime+.12){if(!muted)playStep(seq.mode,seq.step,seq.next);seq.next+=sd;seq.step++;}}
 function playStep(m,s,t){
@@ -58,15 +55,4 @@ function playStep(m,s,t){
     const bass=[40,0,0,40,0,0,43,0,45,0,43,0,40,0,38,0][i];if(bass)tn(NOTE(bass),.2,'square',.06,null,t);if(i===14&&bar)tn(NOTE(76),.08,'square',.03,null,t);}
   else if(m==='title'){const bar=(s>>4)&3;const roots=[45,48,43,40];const arp=[0,7,12,15,12,7,3,7];tn(NOTE(roots[bar]+24+arp[i%8]),.1,'square',.03,null,t);
     if(i%4===0)tn(NOTE(roots[bar]),.22,'triangle',.11,null,t);if(i%8===4)nz(.08,.07,2000,t,'bandpass');if(i%2===0)nz(.02,.025,8000,t,'highpass');}
-  else if(m==='metro'){
-    // Four driving bars: rail-like hats, octave bass pulses and an answering arcade hook.
-    const bar=(s>>4)&3,root=[40,43,45,38][bar];
-    if(i%4===0)tn(140,.15,'sine',.28,42,t);
-    if(i===4||i===12){nz(.1,.1,2000,t,'bandpass');tn(180,.055,'triangle',.045,90,t);}
-    nz(i===15?.055:.025,i%2?.014:.023,6500,t,'highpass');
-    if(i%2===0){const bass=root+([0,0,12,0,7,0,12,7][i>>1]);tn(NOTE(bass),.15,'triangle',.1,null,t);
-      const hook=bar%2?[12,10,7,5,7,3,2,7]:[0,7,10,12,7,3,5,7];
-      tn(NOTE(root+24+hook[i>>1]),.13,'square',.029,null,t);}
-    if(i===15&&bar===3)tn(NOTE(74),.06,'square',.025,null,t);
-  }
 }

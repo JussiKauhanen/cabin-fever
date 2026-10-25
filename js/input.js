@@ -11,8 +11,7 @@ function onKey(e){
   if(kl==='m'&&m!=='entry'){muted=!muted;return;}
   if(m==='title'){if(k==='Enter'||k===' '){SFX.blip();startGame();}else if(k==='ArrowRight'){S.page=(S.page+1)%3;S.pageT=0;}else if(k==='ArrowLeft'){S.page=(S.page+2)%3;S.pageT=0;}return;}
   if(m==='intro'){if(k==='Enter'&&S.t>.4){S.mode='play';S.t=0;}return;}
-  if(m==='play'){if(L.metro){if(kl==='p'||k==='Escape')S.mode='pause';else metroKey(e);return;}
-    if(k===' '&&!e.repeat)throwMag();else if(kl==='r')startRap();else if(kl==='p'||k==='Escape'){S.mode='pause';}return;}
+  if(m==='play'){if(k===' '&&!e.repeat)throwMag();else if(kl==='r')startRap();else if(kl==='p'||k==='Escape'){S.mode='pause';}return;}
   if(m==='pause'){if(kl==='p'||k==='Escape'||k==='Enter')S.mode='play';else if(kl==='r'){SFX.blip();startGame();}else if(kl==='q'){S.mode='title';S.page=0;L=null;}return;} // r = restart (added with the mobile version)
   if(m==='clear'){if(k==='Enter'&&S.t>.8){if(S.level<LEVELS.length-1){S.level++;toIntro(false);}else{S.mode='victory';S.t=0;S.won=true;}}return;}
   if(m==='gameover'&&S.cp>=0){if(S.t>1.2){if(k==='Enter')continueGame();else if(kl==='q'||k==='Escape')afterGame();}return;}
@@ -33,5 +32,5 @@ addEventListener('keydown',e=>{
   keys[e.key.toLowerCase()]=true;onKey(e);syncAudioPause();
 });
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
-addEventListener('blur',()=>{for(const k in keys)keys[k]=false;if(typeof releaseBrake==='function')releaseBrake();if(S.mode==='play')S.mode='pause';syncAudioPause();});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;if(S.mode==='play')S.mode='pause';syncAudioPause();});
 cv.addEventListener('pointerdown',()=>{cv.focus();audioInit();}); // mobile: taps and swipes on the screen are handled in touch.js

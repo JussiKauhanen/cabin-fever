@@ -42,7 +42,6 @@ function drawScoreTable(y0,hl){
     const col=on?'#f8c840':i===0?'#f0a0c8':i<3?'#d8dc5a':'#f2e6d0';txt(ords[i],52,yy,col);txt(s.n,100,yy,col);txt(pad(s.s,7),196,yy,col,1,'r');txt(s.w==='ESC'?'ESCAPED':s.w,268,yy,s.w==='ESC'?'#9dbb6c':col,1,'r');});
 }
 function drawIntro(){
-  if(L.metro){drawMetroIntro();return;}
   ctx.fillStyle='#0e0a12';ctx.fillRect(0,0,W,H);G=ctx;
   txtO('LEVEL '+(S.level+1),160,46,'#f8c840',3,'c','#140a14',1);
   txt(L.d.name,160,78,'#f2e6d0',2,'c');
@@ -83,20 +82,18 @@ function draw(){
   if(m==='entry'){drawEntry();return;}
   if(m==='scores'){drawScores();return;}
   if(!L)return;
-  if(L.metro)drawMetro();else{drawWorld(m==='caught'&&S.t<1.4);drawHUD();}G=ctx;
-  if(!L.metro&&(m==='play'||m==='pause')){ctx.save();ctx.translate(0,OY);ctx.restore();drawBanner();
+  drawWorld(m==='caught'&&S.t<1.4);drawHUD();G=ctx;
+  if(m==='play'||m==='pause'){ctx.save();ctx.translate(0,OY);ctx.restore();drawBanner();
     if(L.grace>0&&m==='play')txtO(L.grace>.5?'GET READY':'GO!',160,96,'#f8c840',2,'c','#140a14');
     if(L.vibe>0)txtO('VIBING '+Math.ceil(L.vibe),160,22,'#f0a0c8',1,'c','#140a14');}
   if(m==='rap')drawRap();
   if(m==='pause')drawCenterCard('PAUSED','#f8c840',[[KT('P OR ENTER TO RESUME','TAP RESUME TO PLAY ON')],[KT('R TO RESTART FROM LEVEL '+(CFG.startLevel||1),'RESTART BEGINS AT LEVEL '+(CFG.startLevel||1)),'#9a8aa8'],[KT('Q TO QUIT TO TITLE','QUIT GOES BACK TO THE TITLE'),'#9a8aa8'],[KT('M SOUND ','SOUND ')+(muted?'OFF':'ON'),'#9a8aa8']],'');
   if(m==='caught'){const cc=L.catcher?FOEQ[L.catcher].card:['ZOMBIFIED!','YOU PUKED. YOU TURNED. YOU RESTART.'];if(S.t>1.3)drawCenterCard(cc[0],'#9dbb6c',[[cc[1]],['NEXT ROUND: '+Math.min(S.zombies+1,MAXZ+1)+' ZOMBIES',S.zombies+1>MAXZ?'#e04a3a':'#9a8aa8']],'');}
-  if(m==='clear'&&L.metro)drawCenterCard('DEPOT REACHED!','#f8c840',[[L.metro.hits+' ZOMBIES HIT'],['FINISH BONUS +'+L.bonus,'#9dbb6c'],['NEXT STOP: A VERY LONG SHOWER.','#9a8aa8']],KT('PRESS ENTER','TAP TO CONTINUE'));
-  else if(m==='clear'){const lines=[[L.d.why[0]],[L.d.why[1],'#9a8aa8'],['ESCAPE BONUS +'+L.bonus,'#9dbb6c'],[CFG.escapeBonus+' X LEVEL '+(S.level+1)+' X '+S.zombies+' ZOMBIE'+(S.zombies>1?'S':''),'#9a8aa8']];
+  if(m==='clear'){const lines=[[L.d.why[0]],[L.d.why[1],'#9a8aa8'],['ESCAPE BONUS +'+L.bonus,'#9dbb6c'],[CFG.escapeBonus+' X LEVEL '+(S.level+1)+' X '+S.zombies+' ZOMBIE'+(S.zombies>1?'S':''),'#9a8aa8']];
     if(L.grannySaved)lines.push(['GRANNY SAFE AT SUNRISE +'+L.grannyBonus,'#f8c840']);
     drawCenterCard('YOU ESCAPED!','#f8c840',lines,KT('PRESS ENTER','TAP TO CONTINUE'));}
-  if(m==='gameover'&&L.metro){R(0,16,320,224,'rgba(10,6,20,.6)');drawCenterCard('METRO WRECKED!','#e04a3a',[[L.metro.timeLeft<=0?'YOU MISSED THE LAST SLOT.':'THE BUFFER STOP WON.'],[KT('ENTER = RETRY THE METRO','TAP RETRY TO DRIVE AGAIN'),'#9dbb6c'],[KT('Q = GIVE UP AND SAVE YOUR SCORE','GIVE UP SAVES YOUR SCORE'),'#9a8aa8']],KT('PRESS ENTER','TAP TO RETRY'));}
-  else if(m==='gameover'&&S.cp>=0){R(0,16,320,224,'rgba(10,6,20,.6)');drawCenterCard('GAME OVER','#e04a3a',[['THE CABIN IS ALL ZOMBIES NOW.'],['BUT YOU FOUND A CHECKPOINT!','#f8c840'],
+  if(m==='gameover'&&S.cp>=0){R(0,16,320,224,'rgba(10,6,20,.6)');drawCenterCard('GAME OVER','#e04a3a',[['THE CABIN IS ALL ZOMBIES NOW.'],['BUT YOU FOUND A CHECKPOINT!','#f8c840'],
     [KT('ENTER = RETRY LEVEL '+(S.cp+1)+', FRESH LIVES','CONTINUE = RETRY LEVEL '+(S.cp+1)+', FRESH LIVES')],[KT('Q = GIVE UP, SAVE YOUR SCORE','GIVE UP = SAVE YOUR SCORE'),'#9a8aa8']],KT('PRESS ENTER','TAP TO CONTINUE'));}
   else if(m==='gameover'){R(0,16,320,224,'rgba(10,6,20,.6)');drawCenterCard('GAME OVER','#e04a3a',[['THE CABIN IS ALL ZOMBIES NOW.'],['THEY ARE ARGUING ABOUT TOYOTAS.','#9a8aa8'],['FINAL SCORE '+pad(S.score,7),'#f8c840']],KT('PRESS ENTER','TAP TO CONTINUE'));}
-  if(m==='victory'){R(0,16,320,224,'rgba(10,6,20,.55)');drawCenterCard('YOU SURVIVED!','#f8c840',[[L.metro?'FOUR NIGHTS. ONE STOLEN METRO.':LEVELS.length+' LEVELS. ZERO BRAINS EATEN.'],['THE ZOMBIES WENT BACK TO THEIR PODCASTS.','#9a8aa8'],['FINAL SCORE '+pad(S.score,7),'#9dbb6c']],KT('PRESS ENTER','TAP TO CONTINUE'));}
+  if(m==='victory'){R(0,16,320,224,'rgba(10,6,20,.55)');drawCenterCard('YOU SURVIVED!','#f8c840',[[['ONE','TWO','THREE','FOUR','FIVE','SIX'][LEVELS.length-1]+' NIGHTS. ZERO BRAINS EATEN.'],['THE ZOMBIES WENT BACK TO THEIR PODCASTS.','#9a8aa8'],['FINAL SCORE '+pad(S.score,7),'#9dbb6c']],KT('PRESS ENTER','TAP TO CONTINUE'));}
 }

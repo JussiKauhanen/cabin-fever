@@ -61,7 +61,7 @@ function game(options={}){
   const document={hidden:false,getElementById:element,
     addEventListener:(name,fn)=>register(listeners,'document:'+name,fn)};
   context=vm.createContext({window,document,navigator,cv:element('g'),
-    S:{mode:'play',t:1,page:0},L:{metro:null},keys:{},tkeys:{},TOUCH:false,
+    S:{mode:'play',t:1,page:0},L:{},keys:{},tkeys:{},TOUCH:false,
     qaGesture:false,qaBlockResume:false,qaBlockConstruction:false,
     addEventListener:(name,fn)=>register(listeners,name,fn),setTimeout,
     throwMag(){vm.runInContext('SFX.throw()',context);}});

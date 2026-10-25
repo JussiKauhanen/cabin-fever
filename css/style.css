@@ -83,7 +83,6 @@ body{color:var(--bone);font-family:var(--pix);overflow:hidden;touch-action:none;
 /* ---- arcade buttons: RAP tucked up-left of THROW, one tight cluster ---- */
 #acts{grid-area:acts;position:relative;--td:96px;--rd:74px}
 #acts .pad{position:absolute;left:50%;top:var(--cya,50%);width:calc(var(--td) + var(--rd)*.85);height:calc(var(--td) + var(--rd)*.8);transform:translate(-50%,-50%)}
-[data-drive=metro] #acts .pad{width:var(--td);height:var(--td)}
 .act{position:absolute;border-radius:50%!important;border:4px solid var(--ink)!important;color:var(--ink)!important;
   font-size:10px!important;flex-direction:column;transition:transform .05s}
 #bthrow{right:0;bottom:0;width:var(--td);height:var(--td);background:var(--pink);
