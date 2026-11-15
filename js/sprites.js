@@ -1,5 +1,5 @@
 "use strict";
-/* Characters (player + zombie) drawn from rectangles, plus small HUD icons. */
+/* Characters (player + zombie) drawn from rectangles, plus small HUD icons (magazine, mic, flag, coin, pill). */
 const PP={o:'#24161e',skin:'#f2c49a',skinDk:'#d89a78',hair:'#c8382e',hairLt:'#ec6a50',shirt:'#efe4cf',shirtDk:'#c4b29c',pants:'#3d3558',shoe:'#24161e',eye:'#24161e',cheek:'#e8968a'};
 const PZ={o:'#18160f',skin:'#9dbb6c',skinDk:'#6f8f4c',hair:'#3d4a36',hairLt:'#5a6c4c',shirt:'#3e8f8c',shirtDk:'#2a6464',pants:'#4a3d5c',shoe:'#18160f',eye:'#ff4a3a',cheek:'#6f8f4c',z:1};
 /* dir: 0 down, 1 up, 2 right, 3 left. (x,y) = feet centre */
@@ -42,3 +42,5 @@ function zhead(x,y){R(x,y,7,7,'#18160f');R(x+1,y+1,5,5,'#9dbb6c');R(x+1,y+1,5,2,
 function magIcon(x,y){R(x,y,8,7,'#24161e');R(x+1,y+1,6,5,'#e05a8a');R(x+2,y+2,3,1,'#fff');R(x+3,y+4,2,1,'#f0d040');}
 function micIcon(x,y){R(x+1,y,5,5,'#24161e');R(x+2,y+1,3,3,'#c8c8d8');R(x+2,y+4,3,4,'#24161e');R(x+3,y+5,1,2,'#5a5a6a');}
 function flagIcon(x,y){R(x,y,2,8,'#24161e');R(x+1,y,7,5,'#24161e');R(x+2,y+1,5,3,'#f8c840');R(x+2,y+1,2,1,'#fff6c0');} // checkpoint held
+function coinIcon(x,y){R(x+1,y,5,7,'#24161e');R(x,y+1,7,5,'#24161e');R(x+1,y+1,5,5,'#f8c840');R(x+2,y+1,2,1,'#fff6c0');R(x+3,y+2,1,3,'#c89020');} // euros
+function pillIcon(x,y){R(x,y+1,8,5,'#24161e');R(x+1,y+2,3,3,'#e04a3a');R(x+4,y+2,3,3,'#3a8af0');R(x+1,y+2,2,1,'#ff9a8a');} // magic pills held

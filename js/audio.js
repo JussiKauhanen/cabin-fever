@@ -41,7 +41,16 @@ const SFX={
   chime(){[784,659,523].forEach((f,i)=>tn(f,.5,'sine',.07,null,anow()+i*.32));},              // announcement ding-dong
   splat(){nz(.25,.18,700);tn(110,.22,'square',.06,40);},                                        // a zombie meets a train
   doors(){tn(880,.14,'square',.03);tn(660,.2,'square',.03,null,anow()+.18);nz(.5,.05,1800,anow()+.4,'highpass');},
-  fine(){tn(1200,.06,'square',.03);tn(1600,.09,'square',.03,null,anow()+.08);}                 // card reader beep
+  fine(){tn(1200,.06,'square',.03);tn(1600,.09,'square',.03,null,anow()+.08);},                // card reader beep
+  coin(){tn(988,.06,'square',.05);tn(1319,.14,'square',.05,null,anow()+.06);},
+  buy(){[659,880,1175].forEach((f,i)=>tn(f,.08,'square',.05,null,anow()+i*.06));},              // kiosk till
+  rob(){tn(440,.1,'square',.06,220);tn(220,.2,'square',.06,110,anow()+.1);},                    // money gone
+  pill(){[330,415,494,659,830].forEach((f,i)=>tn(f,.16,'sine',.07,null,anow()+i*.05));},        // magic pill
+  freeze(){nz(.5,.1,6000,0,'highpass');tn(1760,.5,'sine',.05,880);},
+  ff(){[440,554,659,880,1108].forEach((f,i)=>tn(f,.06,'square',.04,null,anow()+i*.04));},       // fast forward
+  invite(){tn(880,.07,'square',.04);tn(1175,.1,'square',.04,null,anow()+.08);},                 // calendar ping
+  alarm(){for(let i=0;i<3;i++)tn(196,.3,'sawtooth',.06,185,anow()+i*.4);},                      // HR is on her way
+  poof(){nz(.2,.08,3000,0,'bandpass');tn(700,.15,'triangle',.04,1400);}                         // someone vanishes
 };
 const seq={next:0,step:0,mode:null};
 /* lead line for the metro platform tune: one row of 16 steps per bar, MIDI notes, 0 = rest (a note holds until the next one) */
@@ -49,12 +58,14 @@ const STATION_LEAD=[[69,0,72,0,76,0,74,72,0,69,0,67,69,0,0,0],[76,0,76,77,79,0,7
   [77,0,76,0,72,0,69,0,72,0,74,0,72,0,0,0],[71,0,74,0,79,0,0,77,79,0,81,0,79,77,74,0],
   [81,0,79,0,76,0,79,81,0,76,0,74,76,0,0,0],[72,0,74,76,0,72,74,76,79,0,76,0,74,72,69,0],
   [72,0,77,0,81,0,77,0,72,0,77,0,84,0,81,0],[80,0,0,76,0,0,71,0,74,0,76,0,80,0,83,0]];
+/* lead line for the office muzak, same format */
+const OFFICE_LEAD=[[76,0,0,74,0,72,0,0,71,0,0,72,0,0,0,0],[77,0,0,76,0,74,0,0,72,0,0,74,0,0,76,0],[74,0,0,71,0,67,0,0,71,0,0,74,0,0,0,0],[72,0,0,0,76,0,79,0,76,0,0,0,72,0,0,0]];
 function music(m){if(seq.mode!==m){seq.mode=m;seq.step=0;seq.next=anow()+.05;}}
 function syncAudioPause(){if(!AC)return;const paused=S.mode==='pause'||document.hidden;MG.gain.value=muted?0:.3;
   if(paused===audioPaused)return;audioPaused=paused;
   // Freezing the audio clock also holds queued notes, so resuming continues the same phrase.
   if(paused)AC.suspend().catch(()=>{});else resumeAudio();}
-function seqTick(){syncAudioPause();if(!AC||AC.state!=='running'||audioPaused||!seq.mode)return;const bpm=seq.mode==='station'?150:seq.mode==='rap'?96:seq.mode==='title'?112:84;const sd=60/bpm/4;
+function seqTick(){syncAudioPause();if(!AC||AC.state!=='running'||audioPaused||!seq.mode)return;const bpm=seq.mode==='station'?150:seq.mode==='office'?104:seq.mode==='rap'?96:seq.mode==='title'?112:84;const sd=60/bpm/4;
   if(seq.next<AC.currentTime-.3)seq.next=AC.currentTime+.02;
   while(seq.next<AC.currentTime+.12){if(!muted)playStep(seq.mode,seq.step,seq.next);seq.next+=sd;seq.step++;}}
 function playStep(m,s,t){
@@ -77,4 +88,11 @@ function playStep(m,s,t){
     if(lead[i]){let n=1;while(i+n<16&&!lead[i+n])n++;tn(NOTE(lead[i]),Math.min(n,4)*sd*.9,'square',.034,null,t);
       tn(NOTE(lead[i]-12),Math.min(n,4)*sd*.8,'square',.012,null,t+sd*.5);}                       // a quiet octave echo
     if(b===7&&i>=12)tn(NOTE(52-(i-12)*2),.09,'triangle',.1,null,t);}                              // tom fill into the loop
+  else if(m==='office'){
+    // 4-bar lift muzak (Cmaj7 Dm7 G7 C): bossa bass, soft off-beat stabs, a polite sine lead.
+    const b=(s>>4)&3,root=[48,50,43,48][b],ch=[[64,67,71],[65,69,72],[62,65,71],[64,67,72]][b],lead=OFFICE_LEAD[b];
+    if(i===0||i===6||i===8||i===14)tn(NOTE(root+(i===6||i===14?7:0)-12),.22,'triangle',.11,null,t);
+    if(i===3||i===7||i===10||i===13)for(const n of ch)tn(NOTE(n),.09,'square',.011,null,t);
+    if(i%2===0)nz(.02,.014,9000,t,'highpass');if(i===4||i===12)nz(.05,.03,2400,t,'bandpass');
+    if(lead[i])tn(NOTE(lead[i]),.26,'sine',.05,null,t);}
 }

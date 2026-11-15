@@ -1,5 +1,5 @@
 "use strict";
-/* Draws title, intro, high score entry, Hall of Fame and end screens. */
+/* Draws title, intro, the kiosk, high score entry, Hall of Fame and end screens. */
 const TG=['#f8f4a0','#f0e860','#d8dc5a','#b8c83a','#94b03a','#6f9a3a','#557a30'];
 const TR=['#ffd0a0','#ffa070','#f07050','#e04a3a','#c0302a','#9a2424','#701a20'];
 function bigTitle(y,sc,wob){
@@ -26,11 +26,12 @@ function drawTitle(){
 }
 function drawHowTo(){
   txtO('HOW TO SURVIVE',160,26,'#f8c840',2,'c','#140a14');panel(14,46,292,170);
-  let y=56;const row=(icon,a,b)=>{icon(24,y);txt(a,44,y,'#f2e6d0');txt(b,44,y+10,'#9a8aa8');y+=26;};
+  let y=53;const row=(icon,a,b)=>{icon(24,y);txt(a,44,y,'#f2e6d0');txt(b,44,y+10,'#9a8aa8');y+=23;};
   row((x,yy)=>{sunMoon(x+2,yy+1,0);},'LAST UNTIL 6:00 AM','THEN THE EXIT OPENS. RUN FOR IT.');
   row((x,yy)=>{G=ctx;ell(x+6,yy+6,7,3,'#4e5a16');ell(x+6,yy+6,6,2,'#b4c03a');},'DODGE THE PUKE','PUDDLES LAST '+CFG.puddleLife+'S AND MAKE YOU SLIP.');
   row((x,yy)=>magIcon(x+2,yy),'GRAB ART & DANCE MAGS',KT('SPACE THROWS ONE. ZOMBIES STOP TO READ.','TAP THROW. ZOMBIES STOP TO READ.'));
   row((x,yy)=>micIcon(x+3,yy),KT('FIND A MIC, PRESS R','FIND A MIC, TAP RAP'),'TYPE EACH RAP LINE BEFORE TIME RUNS OUT.');
+  row((x,yy)=>coinIcon(x+3,yy),KT('COLLECT COINS, PRESS B','COLLECT COINS, TAP KIOSKI'),KT('THE KIOSKI SELLS HELP. E = MAGIC PILL.','THE KIOSKI SELLS HELP. PILLS BEND TIME.'));
   row((x,yy)=>zhead(x+3,yy),'GET CAUGHT = YOU TURN','RESTART THE LEVEL WITH ONE MORE ZOMBIE.');
   row((x,yy)=>{if(TOUCH){R(x+3,yy+1,2,7,'#f8c840');R(x+7,yy+1,2,7,'#f8c840');}else txt('P',x+4,yy+2,'#f8c840');},KT('P PAUSE   M MUTE','PAUSE & SOUND BUTTONS'),LEVELS.length+' LEVELS. '+MAXZ+' ZOMBIES MAX, THEN GAME OVER.');
 }
@@ -46,11 +47,12 @@ function drawIntro(){
   txtO('LEVEL '+(S.level+1),160,46,'#f8c840',3,'c','#140a14',1);
   txt(L.d.name,160,78,'#f2e6d0',2,'c');
   if(L.recap){txtO('YOU WERE ZOMBIFIED!',160,104,'#9dbb6c',1,'c','#140a14');txt('THE LEVEL RESTARTS. NOW THERE ARE MORE OF THEM.',160,116,'#9a8aa8',1,'c');}else if(L.d.sub)txt(L.d.sub,160,100,'#9a8aa8',1,'c');
-  const n=L.zs.filter(z=>!z.k).length,foes=L.zs.filter(z=>z.k),forest=foes.some(z=>z.k==='granny'),fy=forest||L.d.tips?140:156,w=n*18+foes.length*24+(foes.length?6:0);
-  for(let i=0;i<n;i++)drawHuman(ctx,160-w/2+9+i*18,fy,0,Math.floor(S.clock*4)+i,PZ,{hb:Math.floor(S.clock*3+i)%2});
+  const sk=L.d.zskin,n=L.zs.filter(z=>!z.k).length,foes=L.zs.filter(z=>z.k),forest=foes.some(z=>z.k==='granny'),fy=forest||L.d.tips?140:156,w=n*18+foes.length*24+(foes.length?6:0);
+  for(let i=0;i<n;i++){const zx=160-w/2+9+i*18,hb=Math.floor(S.clock*3+i)%2,fr=Math.floor(S.clock*4)+i;
+    if(sk)sk.draw(ctx,{x:zx,y:fy,i,read:0},hb,0,fr);else drawHuman(ctx,zx,fy,0,fr,PZ,{hb});}
   foes.forEach((z,i)=>FOES[z.k].draw(ctx,Object.assign({},z,{x:160-w/2+n*18+6+12+i*24,y:fy,dir:0,anim:0,read:0,busy:0,st:'prowl',dashT:1}),Math.floor(S.clock*3+i)%2));
-  txt('FACING '+n+' ZOMBIE'+(n>1?'S':'')+foes.map(z=>' + '+(z.k==='granny'?'FRIENDLY GRANNY':FOES[z.k].name)).join(''),160,fy+10,n>=4?'#e04a3a':'#9dbb6c',1,'c');
-  if(L.pending&&L.pending.length){const pz=L.pending.filter(w=>!w.k).length;txt('LATER TONIGHT: '+L.pending.filter(w=>w.k).map(w=>FOES[w.k].name).concat(pz?[pz+' ZOMBIE'+(pz>1?'S':'')]:[]).join(' + '),160,fy+20,'#9a8aa8',1,'c');}
+  txt('FACING '+n+' '+(sk?sk.name:'ZOMBIE')+(n>1?'S':'')+foes.map(z=>' + '+(z.k==='granny'?'FRIENDLY GRANNY':FOES[z.k].name)).join(''),160,fy+10,n>=4?'#e04a3a':'#9dbb6c',1,'c');
+  if(L.pending&&L.pending.length){const pz=L.pending.filter(w=>!w.k).length;txt('LATER TONIGHT: '+L.pending.filter(w=>w.k).map(w=>FOES[w.k].name).concat(L.d.later||[],pz?[pz+' ZOMBIE'+(pz>1?'S':'')]:[]).join(' + '),160,fy+20,'#9a8aa8',1,'c');}
   if(forest){
     txt('GRANNY IS HARMLESS. KEEP ZOMBIES AWAY.',160,174,'#f2e6d0',1,'c');
     txt('BITTEN? SHE THROWS SLIPPERY MUSHROOMS.',160,185,'#f0a0c8',1,'c');
@@ -62,6 +64,17 @@ function drawIntro(){
 }
 function drawCenterCard(a,acol,lines,foot){const w=280,h=26+lines.length*12+24;const x=20,y=120-h/2;panel(x,y,w,h);txt(a,160,y+8,acol,2,'c','#140a14');
   lines.forEach((l,i)=>txt(l[0],160,y+28+i*12,l[1]||'#f2e6d0',1,'c'));if(foot&&Math.floor(S.clock*2)%2)txt(foot,160,y+h-12,'#f8c840',1,'c');}
+/* The kiosk: what you can buy, what it costs and what you have. Rows sit at SHOPUI.row0 + i * SHOPUI.rowH (taps use the same numbers). */
+const SHOPICON={mags:(x,y)=>magIcon(x,y),mic:(x,y)=>micIcon(x+1,y-1),pill:(x,y)=>pillIcon(x,y),freeze:(x,y)=>txt('*',x+1,y,'#9ad8f8'),ff:(x,y)=>txt('>>',x-2,y,'#f8c840'),reset:(x,y)=>zhead(x,y)};
+function drawShop(){const sh=L.shop,u=SHOPUI;if(!sh)return;R(0,16,320,224,'rgba(10,6,20,.6)');panel(u.x,u.y,u.w,u.h);
+  txt('KIOSKI',160,u.y+7,'#f8c840',2,'c','#140a14');coinIcon(u.x+10,u.y+10);txt(S.money+'€',u.x+21,u.y+11,'#f8c840');txt('OPEN 24H',u.x+u.w-10,u.y+11,'#9a8aa8',1,'r');
+  SHOP.forEach((it,i)=>{const y=u.row0+i*u.rowH,on=i===sh.sel,price=CFG.prices[it.k],can=it.ok()&&S.money>=price;
+    if(on){R(u.x+6,y-4,u.w-12,15,'#3a2c3a');R(u.x+6,y-4,2,15,'#f8c840');}
+    txt(String(i+1),u.x+14,y,on?'#f8c840':'#9a8aa8');SHOPICON[it.k](u.x+27,y);
+    txt(it.name,u.x+44,y,can?'#f2e6d0':'#6a5a6a');txt(price+'€',u.x+u.w-14,y,can?'#f8c840':it.ok()?'#e04a3a':'#6a5a6a',1,'r');});
+  const it=SHOP[sh.sel],no=typeof it.no==='function'?it.no():it.no;
+  txt(sh.msgT>0?sh.msg:it.ok()?it.desc:no,160,u.y+u.h-40,sh.msgT>0?sh.col:it.ok()?'#9dbb6c':'#9a8aa8',1,'c');
+  txt(KT('1-6 OR ENTER BUYS. UP/DOWN PICKS.','TAP AN ITEM, THEN BUY.'),160,u.y+u.h-25,'#9a8aa8',1,'c');txt(KT('B OR ESC GOES BACK TO THE GAME.','CLOSE GOES BACK TO THE GAME.'),160,u.y+u.h-14,'#9a8aa8',1,'c');}
 function drawEntry(){
   bgScene(.75);topBar();const e=S.entry;
   txtO('NEW HIGH SCORE!',160,30,'#f8c840',2,'c','#140a14');txt(pad(S.score,7),160,52,'#f2e6d0',3,'c','#140a14');
@@ -86,15 +99,17 @@ function draw(){
   drawWorld(m==='caught'&&S.t<1.4);drawHUD();G=ctx;
   if(m==='play'||m==='pause'){ctx.save();ctx.translate(0,OY);ctx.restore();drawBanner();
     if(L.grace>0&&m==='play')txtO(L.grace>.5?'GET READY':'GO!',160,96,'#f8c840',2,'c','#140a14');
-    if(L.vibe>0)txtO('VIBING '+Math.ceil(L.vibe),160,22,'#f0a0c8',1,'c','#140a14');}
+    if(L.vibe>0)txtO('VIBING '+Math.ceil(L.vibe),160,22,'#f0a0c8',1,'c','#140a14');drawEffects();}
   if(m==='rap')drawRap();
+  if(m==='shop')drawShop();
   if(m==='pause')drawCenterCard('PAUSED','#f8c840',[[KT('P OR ENTER TO RESUME','TAP RESUME TO PLAY ON')],[KT('R TO RESTART FROM LEVEL '+(URL_LEVEL||CFG.startLevel||1),'RESTART BEGINS AT LEVEL '+(URL_LEVEL||CFG.startLevel||1)),'#9a8aa8'],[KT('Q TO QUIT TO TITLE','QUIT GOES BACK TO THE TITLE'),'#9a8aa8'],[KT('M SOUND ','SOUND ')+(muted?'OFF':'ON'),'#9a8aa8']],'');
-  if(m==='caught'){const cc=L.catcher?FOEQ[L.catcher].card:['ZOMBIFIED!','YOU PUKED. YOU TURNED. YOU RESTART.'];if(S.t>1.3)drawCenterCard(cc[0],'#9dbb6c',[[cc[1]],['NEXT ROUND: '+Math.min(S.zombies+1,MAXZ+1)+' ZOMBIES',S.zombies+1>MAXZ?'#e04a3a':'#9a8aa8']],'');}
+  if(m==='caught'){const cc=L.catcher?FOEQ[L.catcher].card:['ZOMBIFIED!','YOU PUKED. YOU TURNED. YOU RESTART.'];const last=L.instant?'THAT ENDS THE GAME. NO NEXT ROUND.':S.zombies>=MAXZ?'THAT WAS YOUR LAST LIFE.':''; // never promise a round with more zombies than the maximum
+    if(S.t>1.3)drawCenterCard(cc[0],'#9dbb6c',[[last&&!L.catcher?'YOU PUKED. YOU TURNED.':cc[1]],last?[last,'#e04a3a']:['NEXT ROUND: '+(S.zombies+1)+' ZOMBIES','#9a8aa8']],'');}
   if(m==='clear'){const lines=[[L.d.why[0]],[L.d.why[1],'#9a8aa8'],['ESCAPE BONUS +'+L.bonus,'#9dbb6c'],[CFG.escapeBonus+' X LEVEL '+(S.level+1)+' X '+S.zombies+' ZOMBIE'+(S.zombies>1?'S':''),'#9a8aa8']];
     if(L.grannySaved)lines.push(['GRANNY SAFE AT SUNRISE +'+L.grannyBonus,'#f8c840']);
     drawCenterCard('YOU ESCAPED!','#f8c840',lines,KT('PRESS ENTER','TAP TO CONTINUE'));}
-  if(m==='gameover'&&S.cp>=0){R(0,16,320,224,'rgba(10,6,20,.6)');drawCenterCard('GAME OVER','#e04a3a',[['THE CABIN IS ALL ZOMBIES NOW.'],['BUT YOU FOUND A CHECKPOINT!','#f8c840'],
+  if(m==='gameover'&&S.cp>=0){R(0,16,320,224,'rgba(10,6,20,.6)');drawCenterCard('GAME OVER','#e04a3a',[[L.instant?'HR HAS CLEARED YOUR DESK.':'THE CABIN IS ALL ZOMBIES NOW.'],['BUT YOU FOUND A CHECKPOINT!','#f8c840'],
     [KT('ENTER = RETRY LEVEL '+(S.cp+1)+', FRESH LIVES','CONTINUE = RETRY LEVEL '+(S.cp+1)+', FRESH LIVES')],[KT('Q = GIVE UP, SAVE YOUR SCORE','GIVE UP = SAVE YOUR SCORE'),'#9a8aa8']],KT('PRESS ENTER','TAP TO CONTINUE'));}
-  else if(m==='gameover'){R(0,16,320,224,'rgba(10,6,20,.6)');drawCenterCard('GAME OVER','#e04a3a',[['THE CABIN IS ALL ZOMBIES NOW.'],['THEY ARE ARGUING ABOUT TOYOTAS.','#9a8aa8'],['FINAL SCORE '+pad(S.score,7),'#f8c840']],KT('PRESS ENTER','TAP TO CONTINUE'));}
-  if(m==='victory'){R(0,16,320,224,'rgba(10,6,20,.55)');drawCenterCard('YOU SURVIVED!','#f8c840',[[['ONE','TWO','THREE','FOUR','FIVE','SIX'][LEVELS.length-1]+' NIGHTS. ZERO BRAINS EATEN.'],['THE ZOMBIES WENT BACK TO THEIR PODCASTS.','#9a8aa8'],['FINAL SCORE '+pad(S.score,7),'#9dbb6c']],KT('PRESS ENTER','TAP TO CONTINUE'));}
+  else if(m==='gameover'){R(0,16,320,224,'rgba(10,6,20,.6)');drawCenterCard('GAME OVER','#e04a3a',[[L.instant?'HR HAS CLEARED YOUR DESK.':'THE CABIN IS ALL ZOMBIES NOW.'],[L.instant?'YOUR BADGE NO LONGER WORKS.':'THEY ARE ARGUING ABOUT TOYOTAS.','#9a8aa8'],['FINAL SCORE '+pad(S.score,7),'#f8c840']],KT('PRESS ENTER','TAP TO CONTINUE'));}
+  if(m==='victory'){R(0,16,320,224,'rgba(10,6,20,.55)');drawCenterCard('YOU SURVIVED!','#f8c840',[[(['ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE'][LEVELS.length-1]||LEVELS.length)+' NIGHTS. ZERO BRAINS EATEN.'],['THE ZOMBIES WENT BACK TO THEIR PODCASTS.','#9a8aa8'],['FINAL SCORE '+pad(S.score,7),'#9dbb6c']],KT('PRESS ENTER','TAP TO CONTINUE'));}
 }

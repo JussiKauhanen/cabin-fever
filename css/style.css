@@ -95,6 +95,17 @@ body{color:var(--bone);font-family:var(--pix);overflow:hidden;touch-action:none;
 #brap:not(.live){filter:grayscale(.9) brightness(.55)}
 #brap.live{animation:mic 1s steps(1) infinite}
 @keyframes mic{50%{box-shadow:0 0 0 3px var(--gold),inset -5px -6px 0 var(--pukedk),inset 4px 4px 0 var(--pukelt),0 6px 0 3px var(--ink),0 0 0 10px rgba(216,220,90,.22)}}
+/* ---- kiosk and pill buttons, stacked above the arcade buttons ---- */
+#acts .tools{position:absolute;left:0;right:0;top:0;display:flex;flex-direction:column;align-items:center;gap:6px;box-sizing:border-box;padding:0 4px}
+[data-or=land] #acts .tools{padding:0 4px 0 10px}
+#acts .tools button{width:100%;max-width:150px;height:30px;font-size:8px;gap:6px}
+#bshop{color:var(--gold);border-color:var(--gold)}
+#bshop.hit{background:var(--gold);color:var(--ink)}
+#bpill{color:#5cf07c;border-color:#3a8a52}
+#bpill.hit{background:#5cf07c;color:var(--ink)}
+#bpill.empty{filter:saturate(.3) brightness(.7)}
+#nmoney,#npills{color:var(--bone)}
+#nmoney::before{content:"";display:inline-block;width:7px;height:7px;margin-right:4px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 1px var(--ink)}
 #nmags{position:absolute;top:-8px;right:-6px;padding:5px 5px 4px;background:var(--ink);color:var(--pinklt);border:2px solid var(--rim);font-size:9px;line-height:1}
 #bthrow.empty #nmags{color:var(--shade)}
 

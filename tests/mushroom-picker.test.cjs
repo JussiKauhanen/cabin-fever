@@ -5,7 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 // Run the real game logic without a browser, rendering, saved scores, or audio.
-const sources = ['core', 'config', 'content', 'enemies', 'station', 'levels', 'state', 'physics', 'update', 'input']
+const sources = ['core', 'config', 'content', 'economy', 'enemies', 'station', 'office', 'levels', 'state', 'physics', 'update', 'input']
   .map(name => [name, fs.readFileSync(path.join(__dirname, '..', 'js', name + '.js'), 'utf8')]);
 function game() {
   const canvas = {getContext: () => ({}), addEventListener() {}};
@@ -21,7 +21,7 @@ function game() {
       GEO.push({solid,doors:[[9,13],[10,13]],ok:solid.map(row=>row.map(cell=>!cell))});
     }
     startGame();S.level=2;setupLevel();S.mode='play';S.score=0;
-    L.time=10;L.grace=0;L.vibe=0;L.pending=[];L.items=[];L.stashT=L.micT=999;
+    L.time=10;L.grace=0;L.vibe=0;L.pending=[];L.items=[];L.stashT=L.micT=L.coinT=L.pillT=999;
     L.p.x=240;L.p.y=180;
     var granny=L.zs.find(z=>z.k==='granny');granny.x=80;granny.y=80;granny.pickT=999;granny.bubbleT=999;L.zs=[granny];
     function zombie(x=granny.x+5,y=granny.y){return Object.assign(newZombie(x,y,0),{spd:0,pukeT:999,bubbleT:999,still:-999});}
@@ -29,7 +29,7 @@ function game() {
   return run;
 }
 
-test('healthy picker is harmless and ignores thrown magazines', () => {
+test('healthy picker is harmless; a thrown magazine is a sale, not a distraction', () => {
   const run=game();
   assert.equal(run('granny.grannyState'), 'healthy');
   assert.equal(run('granny.calm'), true);
@@ -37,12 +37,22 @@ test('healthy picker is harmless and ignores thrown magazines', () => {
   assert.equal(run('S.mode'), 'play');
   assert.equal(run('canReadMag(granny)'), false);
   run('L.projs.push({x:granny.x,y:granny.y,vx:0,vy:0,t:1,spin:0,k:1});updPlay(0)');
-  assert.equal(run('L.projs.length'), 1);
+  assert.equal(run('L.projs.length'), 0, 'she takes the magazine');
+  assert.equal(run('S.money'), run('CFG.magSellPrice'), 'and pays for it');
   assert.equal(run('granny.read'), 0);
   assert.equal(run('S.stats.mags'), 0);
+  run('L.projs.push({x:granny.x,y:granny.y,vx:0,vy:0,t:1,spin:0,k:1});updPlay(0)');
+  assert.equal(run('L.projs.length'), 1, 'one at a time: the next one flies on');
+  assert.equal(run('S.money'), run('CFG.magSellPrice'));
   run('startRead(granny)');
   assert.equal(run('granny.calm'), true);
   assert.equal(run('S.stats.mags'), 0);
+});
+
+test('a bitten picker no longer buys magazines', () => {
+  const run=game();
+  run("infectGranny(granny);L.projs.push({x:granny.x,y:granny.y,vx:0,vy:0,t:1,spin:0,k:1});updPlay(0)");
+  assert.equal(run('S.money'), 0);
 });
 
 test('ordinary zombie contact in actual play starts a harmless transformation once', () => {
