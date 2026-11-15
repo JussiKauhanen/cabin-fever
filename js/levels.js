@@ -1,6 +1,7 @@
 "use strict";
 /* Builds all levels at boot and defines the LEVELS list: night length (shorter = time runs faster), hidden checkpoint,
-   spawns, exit joke. waves = who arrives in each slot of waveEvery seconds ('Z' = the next zombie, if your zombie count has one). */
+   spawns, exit joke. waves = who arrives in each slot of waveEvery seconds ('Z' = the next zombie, if your zombie count has one).
+   zskin = the level's own look and words for its zombies; later = extra names for the intro's LATER TONIGHT line. */
 function reach(solid,sx,sy){const ok=solid.map(r=>r.map(()=>false));const q=[[sx,sy]];ok[sy][sx]=true;while(q.length){const [c,r]=q.shift();for(const [dc,dr] of [[1,0],[-1,0],[0,1],[0,-1]]){const nc=c+dc,nr=r+dr;if(nc<0||nr<0||nc>=COLS||nr>=ROWS||ok[nr][nc]||solid[nr][nc])continue;ok[nr][nc]=true;q.push([nc,nr]);}}return ok;}
 const GEO=[];
 function buildGeo(){
@@ -9,13 +10,17 @@ function buildGeo(){
   const g2=geoL2();const n=paintL2(g2,N2),dd=paintL2(g2,D2);
   GEO.push({solid:g2.solid,doors:[[9,13],[10,13]],bgN:n.bg,fgN:n.fg,bgD:dd.bg,fgD:dd.fg,dyn:dynL2,dark:.34,lights:'l2',smoke:[192,12],ok:reach(g2.solid,10,11)});
   const g3=geoL3(),n3=paintL3(g3,N3),d3=paintL3(g3,D3);
-  GEO.push({solid:g3.solid,doors:[[9,13],[10,13]],bgN:n3.bg,fgN:n3.fg,bgD:d3.bg,fgD:d3.fg,dyn:dynL3,dark:.55,lights:'l3',smoke:[232,82],
+  GEO.push({solid:g3.solid,doors:[[9,13],[10,13]],bgN:n3.bg,fgN:n3.fg,bgD:d3.bg,fgD:d3.fg,dyn:dynL3,dark:.46,lights:'l3',smoke:[232,82],
     lightsAt:fl=>[[232,84,66+fl],[60,48,30]],warmAt:()=>[[232,88,48]],ok:reach(g3.solid,9,11)});
   const s4=L4MAP.map(r=>[...r].map(ch=>ch!=='.')),n4=paintL4(N4),d4=paintL4(D4);
   GEO.push({solid:s4,doors:[[9,13],[10,13]],bgN:n4.bg,fgN:n4.fg,bgD:d4.bg,fgD:d4.fg,dyn:dynL4,dark:.42,lights:'l4',lightsAt:lightsL4,warmAt:warmL4,ok:reach(s4,10,10)});
   // The platform has no door tiles: the first train's doors are the exit. Pickups never spawn on the tracks.
   const s5=L5MAP.map(r=>[...r].map(ch=>ch!=='.'&&ch!=='=')),n5=paintL5(N5),ok5=reach(s5,10,11).map((row,r)=>row.map(v=>v&&!L5MAP[r].includes('=')));
   GEO.push({solid:s5,doors:[],bgN:n5.bg,fgN:n5.fg,dyn:dynL5,dark:.5,lights:'l5',lightsAt:lightsL5,warmAt:warmL5,ok:ok5});
+  const s6=L6MAP.map(r=>[...r].map(ch=>ch!=='.')),n6=paintL6(N6),d6=paintL6(D6);
+  GEO.push({solid:s6,doors:[[9,13],[10,13]],bgN:n6.bg,fgN:n6.fg,bgD:d6.bg,fgD:d6.fg,dyn:dynL6,dark:.42,lights:'l6',smoke:[274,13],lightsAt:lightsL6,warmAt:warmL6,ok:reach(s6,3,4)});
+  const s7=L7MAP.map(r=>[...r].map(ch=>ch!=='.')),n7=paintL7(N7);
+  GEO.push({solid:s7,doors:[[9,13],[10,13]],bgN:n7.bg,fgN:n7.fg,dyn:dynL7,dark:.4,lights:'l7',lightsAt:lightsL7,warmAt:warmL7,ok:reach(s7,10,11)});
 }
 const LEVELS=[
   {name:'THE CABIN',night:70,cp:[280,92],start:[9.5,11.6],zs:[[3.5,7.6],[17.5,4.6],[11.5,4.6],[17.5,9.6],[5.5,5.6]],why:['THE DOOR WAS NEVER LOCKED.','IT WAS JUST TOO DARK TO FIND THE HANDLE.']},
@@ -28,5 +33,14 @@ const LEVELS=[
    waves:[['Z'],['Z','inspector'],['Z'],['Z'],['Z']],waveEvery:16,guestAt:{inspector:[3.5,2.6]},
    music:'station',dawnTitle:'6:00 AM - FIRST TRAIN!',setup:setupStation,tick:stationTick,escape:stationEscape,
    tips:[['TRAINS FLATTEN ANYTHING ON THE TRACKS.','#f2e6d0'],['LURE ZOMBIES THERE. DO NOT STAND THERE.','#f8c840'],['THE INSPECTOR FINES YOU: MAGS OR POINTS.','#5ad8f8'],['6:00 AM: BOARD THE FIRST TRAIN, TRACK 2.','#9dbb6c']],
-   why:['THE FIRST TRAIN LEFT AT 6:00 AM SHARP.','NEXT STOP: ANYWHERE BUT HERE.']}
+   why:['THE FIRST TRAIN LEFT AT 6:00 AM SHARP.','NEXT STOP: ANYWHERE BUT HERE.']},
+  {name:'ESPOO',sub:'OTANIEMI. YOU TOOK THE METRO WEST.',night:150,cp:[120,76],start:[3.5,4.6],zs:[[17.5,11.6],[10.5,10.6],[18.5,4.6],[1.5,10.6],[9.5,3.6]],
+   waves:[['Z','teekkari'],['Z'],['startup'],['Z'],['porvari'],['Z'],['Z']],waveEvery:15,guestAt:{teekkari:[15.5,8.6],startup:[9.5,11.6],porvari:[18.5,8.6]},
+   tips:[['THE TEEKKARI IS HARMLESS. MOSTLY.','#f0a0c8'],['THE FOUNDER IS FAST, BUT GONE IN SECONDS.','#5ad8f8'],['THE PORVARI TAKES ALL YOUR MONEY. SPEND IT.','#f8c840'],['6:00 AM: CROSS THE ROAD ON GREEN.','#9dbb6c']],
+   why:['THE LIGHT TURNED GREEN AT 6:00 AM.','IN ESPOO YOU WAIT. EVEN FOR ZOMBIES.']},
+  {name:'THE OFFICE',sub:'KEILANIEMI. MEGA CORPORATION HQ.',night:160,cp:[261,60],start:[10,11.6],zs:[[1.5,5.6],[18.5,5.6],[8.5,2.6],[1.5,9.6],[18.5,10.6]],
+   waves:[['Z'],['Z','manager'],['Z'],['Z'],['Z']],waveEvery:16,guestAt:{manager:[10.5,6.6]},later:['HR'],zskin:ZOFFICE,
+   music:'office',dawnTitle:'6:00 AM - BADGE OUT!',setup:setupOffice,tick:officeTick,
+   tips:[['OFFICE ZOMBIES LOOK HUMAN. THEY ARE NOT.','#f2e6d0'],['THE MANAGER IS SLOW. DODGE HIS INVITES.','#5ad8f8'],['HR COMES RARELY. ONE TOUCH = GAME OVER.','#e04a3a'],['6:00 AM: BADGE OUT AT THE FRONT DOOR.','#9dbb6c']],
+   why:['THE BADGE READER REBOOTED AT 6:00 AM.','YOU LEFT. YOUR INBOX DID NOT.']}
 ];

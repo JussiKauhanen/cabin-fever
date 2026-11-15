@@ -1,5 +1,5 @@
 "use strict";
-/* Draws the play screen: world layers, entities, lighting, HUD, banners and the rap panel. */
+/* Draws the play screen: world layers, entities, lighting, effect overlays (ice, matrix rain), HUD, banners and the rap panel. */
 const [lc,lx]=mk(320,224);
 let speechState=null,noticeState=null;
 function dawnAmt(){return ss(.72,1,L.time/L.d.night);}
@@ -13,7 +13,7 @@ function drawWorld(shake){
     if(pd.mushroom){ctx.save();ctx.globalAlpha=Math.max(.3,Math.min(1,pd.t/.7));
       pd.chunks.forEach((c,i)=>{const x=pd.x+c[0],y=pd.y+c[1];R(x-1,y,3,2,'#24161e');
         R(x,y,2,1,i%2?'#f2e6d0':'#e88830');R(x-1,y-1,2,1,i%2?'#e88830':'#f8c840');});ctx.restore();continue;}
-    if(pd.t<3&&Math.floor(pd.t*8)%2)continue;const pc=pd.beer?['#5a3a12','#c8902a','#e0b44a','#f4ecd8','#fff6d8']:['#4e5a16','#b4c03a','#cdd44e','#8a6a2a','#f0f4a0'];
+    if(pd.t<3&&Math.floor(pd.t*8)%2)continue;const pc=pd.beer?['#5a3a12','#c8902a','#e0b44a','#f4ecd8','#fff6d8']:pd.coffee?['#2e1c10','#6a4428','#8a5a3a','#c8a878','#e8d8c0']:['#4e5a16','#b4c03a','#cdd44e','#8a6a2a','#f0f4a0'];
     for(const b of pd.blobs)ell(pd.x+b[0],pd.y+b[1],b[2]+1,b[3]+1,pc[0]);
     for(const b of pd.blobs)ell(pd.x+b[0],pd.y+b[1],b[2],b[3],pc[1]);
     for(const b of pd.blobs)ell(pd.x+b[0]-1,pd.y+b[1]-1,Math.max(1,b[2]-3),Math.max(1,b[3]-2),pc[2]);
@@ -26,9 +26,13 @@ function drawWorld(shake){
       if(Math.floor(it.t*4)%2){R(x+5,y-14+b,1,3,'#d8dc5a');R(x+4,y-13+b,3,1,'#d8dc5a');R(x-6,y-6+b,1,1,'#d8dc5a');}}
     else if(it.type==='cp'){ell(x,y,4,1,'rgba(10,6,20,.35)');R(x-1,y-14,3,15,'#24161e');R(x,y-13,1,13,'#c8c0b0');R(x+1,y-14,9,7,'#24161e');R(x+2,y-13,7,5,'#e04a3a');
       for(let i=0;i<7;i+=2)R(x+2+i,y-13+(i%4?2:0),2,2,'#f2e6d0');R(x+2+(Math.floor(it.t*4)%2?6:5),y-13,1,5,'#c03a2e');}
+    else if(it.type==='coin'){const w=[3,2,1,2][Math.floor(it.t*6)&3];ell(x,y,4,1,'rgba(10,6,20,.35)');R(x-w-1,y-10+b,2*w+2,9,'#24161e');R(x-w,y-9+b,2*w,7,'#f8c840');R(x-w,y-9+b,Math.max(1,w-1),7,'#fff6c0');
+      if(w>1)R(x,y-7+b,1,3,'#c89020');if(Math.floor(it.t*3)%2)R(x+5,y-13+b,1,1,'#fff6c0');}
+    else if(it.type==='pill'){ell(x,y,5,1,'rgba(10,6,20,.35)');R(x-6,y-9+b,12,7,'#24161e');R(x-5,y-8+b,5,5,'#e04a3a');R(x,y-8+b,5,5,'#3a8af0');R(x-4,y-8+b,3,1,'#ff9a8a');R(x+1,y-8+b,3,1,'#8ac0ff');
+      const k=Math.floor(it.t*5);for(let i=0;i<3;i++)R(x-7+((k*5+i*6)%15),y-15+b+((k*3+i*5)%9),1,2,'#5cf07c');} // half red, half blue, with a little green rain
     else{if(it.life<3&&Math.floor(it.life*8)%2)continue;R(x-6,y-5,12,6,'#24161e');R(x-5,y-4,5,4,'#f2e6d0');R(x,y-4,5,4,'#e8dcc8');R(x-4,y-3,2,2,it.k===1?'#e05a8a':'#3ac0d0');R(x+1,y-3,3,1,'#8a7a8a');R(x+1,y-1,2,1,'#8a7a8a');}}
-  // A windup marks the aimed spot, so moving away can dodge the mushroom.
-  for(const z of L.zs)if(z.k==='granny'&&z.grannyState==='infected'&&z.throwT>0){const x=Math.round(z.aimX),y=Math.round(z.aimY),col='#f8c840';
+  // A windup marks the aimed spot, so moving away can dodge the mushroom (or the manager's meeting invite).
+  for(const z of L.zs)if(z.throwT>0&&(z.k==='manager'||z.k==='granny'&&z.grannyState==='infected')){const x=Math.round(z.aimX),y=Math.round(z.aimY),col=z.k==='manager'?'#5ad8f8':'#f8c840';
     R(x-6,y-3,4,1,col);R(x+3,y-3,4,1,col);R(x-6,y+3,4,1,col);R(x+3,y+3,4,1,col);
     R(x-6,y-2,1,2,col);R(x+6,y-2,1,2,col);R(x-6,y+1,1,2,col);R(x+6,y+1,1,2,col);}
   // entities
@@ -37,7 +41,11 @@ function drawWorld(shake){
   for(const e of ents){
     if(e.p){const p=L.p;const pal=p.zombie?PZ:PP;let dx=0;if(p.slip>0)dx=Math.floor(S.clock*20)%2?1:-1;if(S.mode==='caught'&&!p.zombie)dx=Math.round((Math.random()-.5)*2);
       const bob=(S.mode==='rap'&&!p.zombie)?beat:0;drawHuman(ctx,p.x,p.y,S.mode==='rap'?0:p.dir,Math.floor(p.anim),pal,{dx,hb:bob,mic:S.mode==='rap',puke:S.mode==='caught'});}
-    else{const z=e.z;const vib=(S.mode==='rap'&&L.rap&&L.rap.cool<=0)||L.vibe>0;if(z.k){FOES[z.k].draw(ctx,z,vib?beat:0);continue;}drawHuman(ctx,z.x,z.y,vib||z.read>0?0:z.dir,vib||z.read>0?0:Math.floor(z.anim),PZ,{hb:vib?beat:0,read:z.read>0?z.readK:0,puke:z.puke>0});}}
+    else{const z=e.z;if(z.hidden)continue;const vib=(S.mode==='rap'&&L.rap&&L.rap.cool<=0)||L.vibe>0;
+      if(z.k)FOES[z.k].draw(ctx,z,vib?beat:0);
+      else{const still=vib||z.read>0,dir=still?0:z.dir,fr=still?0:Math.floor(z.anim),sk=L.d.zskin; // zskin: the level's own zombie look (office)
+        if(sk)sk.draw(ctx,z,vib?beat:0,dir,fr);else drawHuman(ctx,z.x,z.y,dir,fr,PZ,{hb:vib?beat:0,read:z.read>0?z.readK:0,puke:z.puke>0});}
+      if(L.freeze>0)iceBlock(z);}}
   // projectiles
   for(const pr of L.projs){const x=Math.round(pr.x),y=Math.round(pr.y);ell(x,y,3,1,'rgba(10,6,20,.35)');const sp=Math.floor(pr.spin)%2;
     if(sp){R(x-5,y-12,10,6,'#24161e');R(x-4,y-11,8,4,pr.k===1?'#e05a8a':'#3ac0d0');R(x-3,y-10,3,1,'#fff');}else{R(x-2,y-14,4,9,'#24161e');R(x-1,y-13,2,7,pr.k===1?'#e05a8a':'#3ac0d0');}}
@@ -60,21 +68,38 @@ function drawWorld(shake){
     ctx.globalCompositeOperation='lighter';const warm=g.warmAt?g.warmAt(fl):g.lights==='l1'?[[264,56,50]]:[[136,190,26],[184,190,26]];
     for(const [x,y,r] of warm){const gr=ctx.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,'rgba(240,138,48,'+(.16*dark/g.dark).toFixed(3)+')');gr.addColorStop(1,'rgba(240,138,48,0)');ctx.fillStyle=gr;ctx.fillRect(x-r,y-r,2*r,2*r);}
     ctx.globalCompositeOperation='source-over';}
+  if(L.matrix>0)matrixRain();
   // The picker stays harmless until her bite countdown ends.
   for(const z of L.zs)if(z.k==='granny'&&z.grannyState!=='infected'){
     const safe=z.grannyState==='healthy',label=safe?(L.grannySaved?'SAVED':'SAFE'):'TURNING '+Math.max(1,Math.ceil(z.turnT));
     txtO(label,Math.max(28,Math.min(292,z.x)),Math.min(211,z.y+4),safe?'#9dbb6c':'#f8c840',1,'c','#140a14');}
   // Speech stays attached to its speaker; overlap fades it instead of moving it around.
   if(S.mode==='play')drawGameplaySpeech();
+  if(L.p.stuck>0){const x=Math.round(L.p.x),y=Math.round(L.p.y)-34;R(x-6,y,12,10,'#24161e');R(x-5,y+1,10,8,'#f2f2f2');R(x-5,y+1,10,2,'#e04a3a');R(x-3,y+5,2,2,'#5ad8f8');R(x+1,y+5,2,2,'#9a8aa8');
+    txtO('IN A MEETING',Math.max(40,Math.min(280,x)),y-9,'#5ad8f8',1,'c','#140a14');} // rooted by an invite: a calendar page over your head
   // floaters
   for(const f of L.floats)txt(f.text,Math.max(tw(f.text,1)/2+2,Math.min(318-tw(f.text,1)/2,f.x)),f.y,f.col,1,'c','#140a14');
   ctx.restore();
 }
+/* DEEP FREEZE: everyone hostile sits in a block of ice that flickers just before it thaws */
+function iceBlock(z){const x=Math.round(z.x),y=Math.round(z.y),h=(z.bh||22)+2,w=z.k==='bear'?26:16,l=x-w/2,a=G.globalAlpha;
+  G.globalAlpha=a*(L.freeze<1&&Math.floor(S.clock*10)%2?.25:.5);R(l,y-h,w,h+2,'#9ad8f8');G.globalAlpha=a*.9;
+  R(l,y-h,w,1,'#e8f8ff');R(l,y-h,1,h+2,'#e8f8ff');R(l+w-1,y-h,1,h+2,'#5aa8d8');R(l,y+1,w,1,'#5aa8d8');R(l+3,y-h+3,1,5,'#ffffff');R(l+5,y-h+2,1,3,'#ffffff');G.globalAlpha=a;}
+/* magic pill: a green tint and falling code over the whole level */
+function matrixRain(){const a=G.globalAlpha,fade=Math.min(1,L.matrix/.6);G.globalAlpha=a*.1*fade;R(0,0,320,224,'#28dc5a');
+  for(let i=0;i<40;i++){const head=((S.clock*(40+((i*37)%50))+i*53)%300)-40,x=i*8+2;
+    for(let k=0;k<7;k++){const y=Math.round(head-k*7);if(y<0||y>217)continue;const col=k?'#3ae06a':'#d8ffe0',bits=Math.imul(i*7+k*13+Math.floor(S.clock*8),2654435761)>>>0;
+      G.globalAlpha=a*fade*(k?.34-k*.04:.7);R(x,y,1,5,col);if(bits&1)R(x+1,y,2,1,col);if(bits&2)R(x+1,y+2,2,1,col);if(bits&4)R(x+1,y+4,2,1,col);if(bits&8)R(x+3,y+1,1,3,col);}}
+  G.globalAlpha=a;}
+/* what is running right now, bottom left: freeze, fast forward, pill */
+function drawEffects(){let y=230;const row=(s,col)=>{txtO(s,4,y,col,1,'l','#140a14');y-=10;};
+  if(L.freeze>0)row('FREEZE '+Math.ceil(L.freeze),'#9ad8f8');if(L.ff>0)row('FAST FORWARD '+Math.ceil(L.ff),'#f8c840');if(L.matrix>0)row('MAGIC PILL '+Math.ceil(L.matrix),'#5cf07c');}
 function rectsOverlap(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
 function actionRects(){
   const p=L.p,rects=[{x:p.x-15,y:p.y-29,w:30,h:41}];
   for(const z of L.zs){const bh=z.bh||22;rects.push({x:z.x-12,y:z.y-bh-4,w:24,h:bh+18});
-    if(z.k==='granny'&&z.throwT>0)rects.push({x:z.aimX-10,y:z.aimY-8,w:20,h:16});}
+    if(z.throwT>0&&z.aimX!=null)rects.push({x:z.aimX-10,y:z.aimY-8,w:20,h:16});}
+  if(L.office)for(const m of L.office.invites)rects.push({x:m.x-8,y:m.y-18,w:16,h:23});
   for(const m of L.mushrooms)rects.push({x:m.x-8,y:m.y-22,w:16,h:27});
   for(const m of L.projs)rects.push({x:m.x-8,y:m.y-18,w:16,h:23});
   for(const pd of L.puddles)if(Math.hypot(pd.x-p.x,pd.y-p.y)<60)for(const b of pd.blobs)
@@ -99,7 +124,7 @@ function drawGameplaySpeech(){const blocked=actionRects(),notice=noticeLayout(L.
   if(notice)blocked.push({x:notice.x-2,y:notice.y-2,w:notice.w+4,h:notice.h+4});
   if(!speechState||speechState.level!==L||!L.zs.includes(speechState.speaker)||speechState.speaker.sayT<=0||!speechState.speaker.say){
     const urgent=z=>z.throwT>0||z.grannyState==='turning'||z.st==='windup';
-    const speakers=L.zs.filter(z=>z.sayT>0&&z.say)
+    const speakers=L.zs.filter(z=>z.sayT>0&&z.say&&!z.hidden)
       .sort((a,b)=>Number(urgent(b))-Number(urgent(a))||Math.hypot(a.x-L.p.x,a.y-L.p.y)-Math.hypot(b.x-L.p.x,b.y-L.p.y));
     speechState=speakers.length?{level:L,speaker:speakers[0]}:null;}
   if(!speechState)return;const z=speechState.speaker;
@@ -124,14 +149,17 @@ function sunMoon(x,y,t){if(t<1){disc(x+3,y+3,3,'#e8e0b8');disc(x+5,y+2,2,'#1a121
 function drawHUD(){
   G=ctx;R(0,0,320,16,'#1a121c');R(0,15,320,1,'#4a3a46');
   const t=Math.min(1,L.time/L.d.night);sunMoon(4,3,t);
-  const mins=Math.floor(t*360),hh=Math.floor(mins/60),mm=mins%60;txt((hh===0?12:hh)+':'+pad(mm,2)+'AM',14,3,t>=1?'#f8c840':'#f2e6d0');
+  const mins=Math.floor(t*360),hh=Math.floor(mins/60),mm=mins%60,fast=(L.ff>0||L.matrix>0)&&Math.floor(S.clock*6)%2; // the clock flashes while it runs fast
+  txt((hh===0?12:hh)+':'+pad(mm,2)+'AM',14,3,fast?'#5ad8f8':t>=1?'#f8c840':'#f2e6d0');
   R(14,12,40,2,'#3a2a46');R(14,12,Math.round(40*t),2,t<1?mix('#7a5ad8','#f8a040',ss(.6,1,t)):'#f8c840');
   txt('L'+(S.level+1),62,4,'#9a8aa8');
   txt('SCORE',80,4,'#9a8aa8');txt(pad(S.score,7),112,4,'#f2e6d0');
-  magIcon(168,3);txt('X'+L.p.mags,178,4,L.p.mags?'#f0a0c8':'#5a4a5a');
-  if(L.p.mic){micIcon(196,3);if(Math.floor(S.clock*3)%2)txt('R',206,4,'#d8dc5a');}
-  if(S.cp>=0){flagIcon(224,3);txt(String(S.cp+1),234,4,'#f8c840');}
-  zhead(264,3);txt(S.zombies+'/'+MAXZ,274,4,S.zombies>=4?'#e04a3a':'#9dbb6c');
+  magIcon(160,3);txt('X'+L.p.mags,170,4,L.p.mags?'#f0a0c8':'#5a4a5a');
+  pillIcon(186,3);txt('X'+S.pills,196,4,S.pills?'#5cf07c':'#5a4a5a');
+  coinIcon(212,3);txt(String(S.money),222,4,S.money?'#f8c840':'#5a4a5a');
+  if(L.p.mic){micIcon(245,3);if(Math.floor(S.clock*3)%2)R(252,3,1,2,'#d8dc5a');}
+  if(S.cp>=0){flagIcon(257,3);txt(String(S.cp+1),267,4,'#f8c840');}
+  zhead(279,3);txt(Math.min(S.zombies,MAXZ)+'/'+MAXZ,289,4,S.zombies>=4?'#e04a3a':'#9dbb6c');
 }
 function drawBanner(){const r=noticeLayout(L.banner,Math.floor(S.clock/1.4));if(!r){noticeState=null;return;}
   if(!noticeState||noticeState.level!==L||noticeState.banner!==L.banner)noticeState={level:L,banner:L.banner};

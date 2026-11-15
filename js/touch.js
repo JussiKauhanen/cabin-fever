@@ -6,6 +6,7 @@ const $=id=>document.getElementById(id);
 const app=$('app'),sysEl=$('sys'),stickEl=$('stick'),baseEl=stickEl.querySelector('.base'),knobEl=stickEl.querySelector('.knob'),actsEl=$('acts');
 const menuEl=$('menu'),kbEl=$('kb'),pc=$('prompter'),pctx=pc.getContext('2d');
 const bthrow=$('bthrow'),brap=$('brap'),nmags=$('nmags'),bsound=$('bsound'),bpause=$('bpause'),bfull=$('bfull');
+const bpill=$('bpill'),npills=$('npills'),nmoney=$('nmoney'); // kiosk + pill buttons (their data-k keys are B and E)
 
 /* one press from a button: same flow as the keydown handler in input.js, minus holding the key down */
 function tapKey(k){audioInit();const e={key:k,repeat:false,preventDefault(){}};
@@ -16,6 +17,7 @@ function tapKey(k){audioInit();const e={key:k,repeat:false,preventDefault(){}};
 /* 9x9 pixel icons */
 const ico=d=>'<svg viewBox="0 0 9 9" aria-hidden="true"><path d="'+d+'"/></svg>';
 const IC={left:ico('M5 1h1v7H5zM4 2h1v5H4zM3 3h1v3H3zM2 4h1v1H2z'),right:ico('M3 1h1v7H3zM4 2h1v5H4zM5 3h1v3H5zM6 4h1v1H6z'),
+  up:ico('M4 2h1v1H4zM3 3h3v1H3zM2 4h5v1H2zM1 5h7v1H1z'),down:ico('M1 3h7v1H1zM2 4h5v1H2zM3 5h3v1H3zM4 6h1v1H4z'),
   pause:ico('M2 1h2v7H2zM5 1h2v7H5z'),sound:ico('M1 3h2v3H1zM3 2h1v5H3zM4 1h1v7H4zM6 3h1v3H6zM8 1h1v7H8z'),
   mute:ico('M1 3h2v3H1zM3 2h1v5H3zM4 1h1v7H4zM6 3h1v1H6zM8 3h1v1H8zM7 4h1v1H7zM6 5h1v1H6zM8 5h1v1H8z'),
   full:ico('M0 0h3v1H1v2H0zM6 0h3v3H8V1H6zM0 6h1v2h2v1H0zM8 6h1v3H6V8h2z'),
@@ -27,6 +29,7 @@ const apiFS=()=>!!(document.fullscreenElement||document.webkitFullscreenElement)
 const isFS=()=>apiFS()||!!(window.matchMedia&&matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches);
 const desktopPointer=window.matchMedia&&matchMedia('(hover: hover) and (pointer: fine)');
 let orient='',kbRowsN=4,desktopRapY=150;
+const TOOLS_H=74; // two 30 px buttons, their gap and some air
 function layoutMobile(){
   const b=document.body,land=innerWidth>innerHeight*1.1,fs=isFS();orient=land?'land':'port';b.dataset.or=orient;
   if(fs)b.dataset.fs='1';else delete b.dataset.fs;
@@ -63,6 +66,7 @@ function layoutMobile(){
     cys=clamp(sb/2+4,H*.56-top,H-top-sb/2-24);cya=clamp((td+rd*.8)/2,cys+top,H-(td+rd*.8)/2);}
   else{const side=(W-gap)/2,deck=H-ch-sysH-2*gap;td=clamp(72,Math.min(side*.5,deck*.36),108);rd=td*.78;sb=clamp(96,Math.min(side*.72,deck*.5),136);
     cys=cya=clamp(Math.max(sb,td+rd*.8)/2+6,deck*.45,deck-sb/2-26);}
+  cya=Math.max(cya,TOOLS_H+(td+rd*.8)/2); // the arcade buttons stay clear of the kiosk and pill buttons above them
   stickEl.style.setProperty('--sb',Math.round(sb)+'px');stickEl.style.setProperty('--cys',Math.round(cys)+'px');
   actsEl.style.setProperty('--td',Math.round(td)+'px');actsEl.style.setProperty('--rd',Math.round(rd)+'px');actsEl.style.setProperty('--cya',Math.round(cya)+'px');
 }
@@ -106,6 +110,8 @@ const TAPGO=['title','intro','pause','clear','gameover','victory','scores'];let 
 cv.addEventListener('pointerdown',e=>{ctap={id:e.pointerId,x:e.clientX,y:e.clientY};});
 cv.addEventListener('pointerup',e=>{if(!ctap||ctap.id!==e.pointerId)return;const dx=e.clientX-ctap.x,dy=e.clientY-ctap.y,m=S.mode;ctap=null;
   if(m==='title'&&Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)*1.5){tapKey(dx<0?'ArrowRight':'ArrowLeft');return;}
+  if(m==='shop'&&Math.hypot(dx,dy)<24){const r=cv.getBoundingClientRect(),i=shopRowAt((e.clientX-r.left)/r.width*320,(e.clientY-r.top)/r.height*240); // tap an item to pick it
+    if(i>=0&&L.shop){L.shop.sel=i;L.shop.msgT=0;SFX.blip();}return;}
   if(Math.hypot(dx,dy)<24&&TAPGO.includes(m))tapKey('Enter');});
 
 /* ---- menu buttons per screen: [label, key, class, aria label] ---- */
@@ -114,6 +120,7 @@ function menuFor(m){const last=S.level>=LEVELS.length-1;
     case 'title':return {rows:[[['START','Enter','go']],[[IC.left,'ArrowLeft','sq','Previous page'],[IC.right,'ArrowRight','sq','Next page']]],hint:'SWIPE THE SCREEN TO FLIP PAGES'};
     case 'intro':return {rows:[[['GO!','Enter','go']]]};
     case 'pause':return {rows:[[['RESUME','Enter','go']],[['RESTART','r'],['QUIT','q']]]};
+    case 'shop':return {rows:[[['BUY','Enter','go']],[[IC.up,'ArrowUp','sq','Previous item'],[IC.down,'ArrowDown','sq','Next item']],[['CLOSE','b']]],hint:'OR TAP AN ITEM ON THE SCREEN'};
     case 'clear':return {rows:[[[last?'CONTINUE':'NEXT LEVEL','Enter','go']]]};
     case 'gameover':if(S.cp>=0)return {rows:[[['CONTINUE','Enter','go']],[['GIVE UP','q']]]};return {rows:[[['CONTINUE','Enter','go']]]};
     case 'victory':return {rows:[[['CONTINUE','Enter','go']]]};
@@ -163,19 +170,21 @@ function drawEntryPrompt(){const e=S.entry;if(!e)return;const c=pctx,sc=pad(S.sc
 
 /* ---- per frame: match the panel to the current screen ---- */
 const READY={intro:.4,clear:.8,gameover:1.2,victory:1.2,scores:.5}; // same waits as onKey() before Enter works
-let deckMode=null,lastMags=-1,lastMic=null,lastMute=null,lastNext,nextEl=null;
+let deckMode=null,lastMags=-1,lastMic=null,lastMute=null,lastNext,nextEl=null,lastPills=-1,lastMoney=-1;
 function applyDeck(m){deckMode=m;const d=m==='play'||m==='caught'?'play':m==='rap'||m==='entry'?'kb':'menu';
   document.body.dataset.deck=d;document.body.dataset.mode=m;
   if(d!=='play')releaseStick();
   if(d==='menu')buildMenu(m);
   if(d==='kb')buildKeys(m);
   bpause.innerHTML=m==='pause'?IC.right:IC.pause;bpause.setAttribute('aria-label',m==='pause'?'Resume':'Pause');
-  lastMags=-1;lastMic=null;lastNext=undefined;nextEl=null;
+  lastMags=-1;lastMic=null;lastNext=undefined;nextEl=null;lastPills=lastMoney=-1;
   layoutMobile();}
 function syncTouch(){const m=S.mode;if(m!==deckMode)applyDeck(m);
   if(L&&(m==='play'||m==='caught')){const p=L.p;
     if(p.mags!==lastMags){lastMags=p.mags;nmags.textContent='X'+p.mags;bthrow.classList.toggle('empty',!p.mags);}
-    if(p.mic!==lastMic){lastMic=p.mic;brap.classList.toggle('live',!!p.mic);}}
+    if(p.mic!==lastMic){lastMic=p.mic;brap.classList.toggle('live',!!p.mic);}
+    if(S.pills!==lastPills){lastPills=S.pills;npills.textContent='X'+S.pills;bpill.classList.toggle('empty',!S.pills);}
+    if(S.money!==lastMoney){lastMoney=S.money;nmoney.textContent=S.money;}}
   if(muted!==lastMute){lastMute=muted;bsound.innerHTML=muted?IC.mute:IC.sound;bsound.setAttribute('aria-label',muted?'Sound is off':'Sound is on');}
   const w=READY[m];if(w!=null){const b=menuEl.querySelector('.go');if(b)b.classList.toggle('wait',S.t<=w);}
   if(m==='rap'&&L&&L.rap){drawPrompt();

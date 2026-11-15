@@ -5,7 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 // Run the real platform rules (trains, inspector, first-train exit) without a browser, rendering or audio.
-const sources = ['core', 'config', 'content', 'enemies', 'station', 'levels', 'state', 'physics', 'update', 'input']
+const sources = ['core', 'config', 'content', 'economy', 'enemies', 'station', 'office', 'levels', 'state', 'physics', 'update', 'input']
   .map(name => [name, fs.readFileSync(path.join(__dirname, '..', 'js', name + '.js'), 'utf8')]);
 function game() {
   const canvas = {getContext: () => ({}), addEventListener() {}};
@@ -21,7 +21,7 @@ function game() {
       GEO.push({solid,doors:[],ok:solid.map(row=>row.map(cell=>!cell))});
     }
     startGame();S.level=LEVELS.findIndex(d=>d.tick);setupLevel();S.mode='play';S.score=0;
-    L.time=10;L.grace=0;L.vibe=0;L.pending=[];L.items=[];L.stashT=L.micT=999;L.station.annT=999;L.station.nextT=999;
+    L.time=10;L.grace=0;L.vibe=0;L.pending=[];L.items=[];L.stashT=L.micT=L.coinT=L.pillT=999;L.station.annT=999;L.station.nextT=999;
     L.p.x=160;L.p.y=180;
     function zombie(x,y){return Object.assign(newZombie(x,y,0),{spd:0,pukeT:999,bubbleT:999,still:-999});}
     function pass(k){L.station.trains.push(newTrain(k));for(let i=0;i<120&&S.mode==='play';i++)updPlay(1/30);}
@@ -29,9 +29,10 @@ function game() {
   return run;
 }
 
-test('the platform is the last level and uses its own rules', () => {
+test('the platform uses its own rules and the metro goes on to Espoo', () => {
   const run=game();
-  assert.equal(run('S.level'), run('LEVELS.length-1'));
+  assert.equal(run('L.d.name'), 'KONTULA METRO');
+  assert.equal(run('LEVELS[S.level+1].name'), 'ESPOO');
   assert.equal(run('L.d.music'), 'station');
   assert.equal(run('Boolean(L.station)'), true);
 });
@@ -77,6 +78,16 @@ test('the inspector fines magazines, then points, and never catches', () => {
   assert.equal(run('S.mode'), 'play', 'reading a magazine does not make him dangerous');
 });
 
+test('the inspector takes his fine in euros when you can pay it in full', () => {
+  const run=game();
+  run('var ins=newFoe("inspector",L.p.x,L.p.y);ins.bubbleT=999;L.zs=[ins];L.p.mags=3;S.money=CFG.inspectorFineMoney+5;updPlay(0)');
+  assert.equal(run('S.money'), 5);
+  assert.equal(run('L.p.mags'), 3, 'magazines are left alone');
+  run('ins.busy=0;ins.fineCd=0;updPlay(0)');
+  assert.equal(run('S.money'), 5, 'too little money left: he takes magazines instead');
+  assert.equal(run('L.p.mags'), 1);
+});
+
 test('a train only grazes the inspector: he lands on the platform, dizzy and harmless', () => {
   const run=game();
   run('var ins=newFoe("inspector",200,112);ins.bubbleT=999;L.zs=[ins];L.p.x=60;L.p.y=60;L.p.mags=3;pass(0)');
@@ -110,7 +121,7 @@ test('at 6:00 AM the first train stops on track 2 and only its open doors are th
   assert.equal(run('S.mode'), 'play', 'a closed side of the train is not a door');
   run('L.p.x=L.station.final.x+TRAIN_DOORS[1];updPlay(0)');
   assert.equal(run('S.mode'), 'clear');
-  assert.equal(run('S.stats.reached'), 'ESC');
+  assert.equal(run('S.stats.reached'), run("'L'+(S.level+2)"), 'the next stop is Espoo, not the end of the game');
 });
 
 test('no ordinary trains are scheduled after 6:00 AM', () => {

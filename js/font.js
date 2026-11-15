@@ -63,6 +63,7 @@ _ 00000 00000 00000 00000 00000 00000 11111
 Ä 01010 00000 01110 10001 11111 10001 10001
 Ö 01010 00000 01110 10001 10001 10001 01110
 Å 00100 01010 01110 10001 11111 10001 10001
+€ 00110 01001 11100 01000 11100 01001 00110
 `;
 const FONT={};FONT_SRC.trim().split('\n').forEach(l=>{const p=l.trim().split(/\s+/);FONT[p[0]]=p.slice(1).map(b=>parseInt(b,2));});
 function glyphs(c,s,x,y,col,sc){for(let i=0;i<s.length;i++){const g=FONT[s[i]];if(!g)continue;for(let r=0;r<7;r++){const row=g[r];if(!row)continue;c.fillStyle=Array.isArray(col)?col[r]:col;for(let k=0;k<5;k++)if(row&(16>>k))c.fillRect(x+i*6*sc+k*sc,y+r*sc,sc,sc);}}}
